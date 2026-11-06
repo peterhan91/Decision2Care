@@ -8,6 +8,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -e '.[test]'
+      - run: python -m pip install -e '.[test,live]'
       - run: python -m pytest -q
       - run: bash scripts/run_synthetic.sh

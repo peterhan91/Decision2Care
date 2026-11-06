@@ -12,7 +12,10 @@
     "ICD-9 crosswalk loading optional; not used for ICD-10 inference.",
     "Pinned model checked on every uncached response.",
     "Forecast task prompts extracted verbatim; generic runner supports eight ED8h disease presets.",
-    "No patient records, fixed patient lists, provider credentials, caches, or experiment results included."
+    "No patient records, fixed patient lists, provider credentials, caches, or experiment results included.",
+    "Independent release audit restored the copy import used by the production prognosis response handler.",
+    "Unused optional dialogue-start helpers removed; the supported record-history renderer is retained.",
+    "Production HTTP and SDK adapters verified with mock transports without provider calls."
   ],
   "files": [
     {

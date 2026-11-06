@@ -8,6 +8,7 @@ requests carry the experimental images header the API requires.
 from __future__ import annotations
 
 import json
+import copy
 import math
 import os
 import time
