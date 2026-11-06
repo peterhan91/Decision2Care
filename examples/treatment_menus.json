@@ -1,0 +1,68 @@
+{
+  "purposes": {
+    "therapeutic anticoagulation (treatment dose: a heparin infusion, treatment-dose low-molecular-weight heparin, a direct oral anticoagulant or warfarin)": [
+      {
+        "items": [
+          "Anticoagulant example|synthetic_anticoagulant_0"
+        ],
+        "drugs": [
+          "synthetic_anticoagulant_0"
+        ],
+        "shown": "Synthetic regimen 0"
+      }
+    ],
+    "pharmacological prophylaxis of venous thromboembolism (prophylactic dose: subcutaneous heparin or low-molecular-weight heparin)": [
+      {
+        "items": [
+          "Anticoagulant example|synthetic_anticoagulant_1"
+        ],
+        "drugs": [
+          "synthetic_anticoagulant_1"
+        ],
+        "shown": "Synthetic regimen 1"
+      }
+    ],
+    "synthetic symptom relief": [
+      {
+        "items": [
+          "Example class|exampledrug"
+        ],
+        "drugs": [
+          "exampledrug"
+        ],
+        "shown": "Synthetic exampledrug regimen"
+      }
+    ]
+  },
+  "doses": {
+    "default": {
+      "exampledrug": [
+        {
+          "shown": "synthetic dose A"
+        }
+      ]
+    },
+    "therapeutic anticoagulation (treatment dose: a heparin infusion, treatment-dose low-molecular-weight heparin, a direct oral anticoagulant or warfarin)": {
+      "synthetic_anticoagulant_0": [
+        {
+          "shown": "synthetic dose 0"
+        }
+      ]
+    },
+    "pharmacological prophylaxis of venous thromboembolism (prophylactic dose: subcutaneous heparin or low-molecular-weight heparin)": {
+      "synthetic_anticoagulant_1": [
+        {
+          "shown": "synthetic dose 1"
+        }
+      ]
+    }
+  },
+  "procedure_categories": {
+    "47": [
+      [
+        "4709",
+        "Other appendectomy"
+      ]
+    ]
+  }
+}

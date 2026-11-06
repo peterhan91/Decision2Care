@@ -1,0 +1,68 @@
+{
+  "lab_test_mapping": [
+    {
+      "label": "Creatinine",
+      "corresponding_ids": [
+        50912
+      ]
+    },
+    {
+      "label": "White Blood Cells",
+      "corresponding_ids": [
+        51301
+      ]
+    },
+    {
+      "label": "Complete Blood Count (CBC)",
+      "corresponding_ids": [
+        51301
+      ]
+    }
+  ],
+  "lab_items": {
+    "50912": {
+      "itemid": 50912,
+      "label": "Creatinine",
+      "fluid": "Blood",
+      "category": "Chemistry",
+      "count": 1
+    },
+    "51301": {
+      "itemid": 51301,
+      "label": "White Blood Cells",
+      "fluid": "Blood",
+      "category": "Hematology",
+      "count": 1
+    }
+  },
+  "lab_groups": {
+    "blood_chemistry": [
+      50912
+    ],
+    "blood_hematology": [
+      51301
+    ],
+    "common_panels": []
+  },
+  "panels": {
+    "Complete Blood Count (CBC)": [
+      51301
+    ]
+  },
+  "imaging": {
+    "CT Abdomen": [
+      "CT",
+      "Abdomen",
+      "Computed tomography of the abdomen"
+    ]
+  },
+  "micro_items": {},
+  "item_class": {
+    "50912": [
+      50912
+    ],
+    "51301": [
+      51301
+    ]
+  }
+}

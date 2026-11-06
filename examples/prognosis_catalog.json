@@ -1,0 +1,20 @@
+{
+  "t0": {
+    "tool": "PatientHistory",
+    "arguments": {},
+    "record_ids": [
+      "r1"
+    ]
+  },
+  "t1": {
+    "tool": "LabRequest",
+    "arguments": {
+      "test": "Creatinine",
+      "specimen": "blood"
+    },
+    "record_ids": [
+      "r2",
+      "r3"
+    ]
+  }
+}

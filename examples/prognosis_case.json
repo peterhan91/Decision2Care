@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "synthetic-prognosis-1",
+  "title": "Entirely synthetic ED8-hour AKI example",
+  "provenance": "synthetic",
+  "prediction_time": "2020-01-01T08:00:00",
+  "records": [
+    {
+      "id": "r1",
+      "kind": "history",
+      "title": "Synthetic history",
+      "source": "synthetic",
+      "event_time": "2020-01-01T01:00:00",
+      "available_time": "2020-01-01T01:00:00",
+      "text": "Synthetic adult with rising creatinine. No real patient data."
+    },
+    {
+      "id": "r2",
+      "kind": "labs",
+      "title": "Creatinine",
+      "source": "synthetic",
+      "event_time": "2020-01-01T02:00:00",
+      "available_time": "2020-01-01T03:00:00",
+      "text": "Synthetic creatinine: 1.0 mg/dL."
+    },
+    {
+      "id": "r3",
+      "kind": "labs",
+      "title": "Creatinine",
+      "source": "synthetic",
+      "event_time": "2020-01-01T06:00:00",
+      "available_time": "2020-01-01T07:00:00",
+      "text": "Synthetic creatinine: 1.4 mg/dL."
+    }
+  ]
+}

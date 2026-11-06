@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Decision2Care"
+version = "0.1.0"
+description = "Auditable clinical support with decision agents"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Decision2Care contributors"}]
+dependencies = [
+  "numpy>=1.26,<3", "pandas>=2.1,<3", "loguru>=0.7,<1",
+  "simple-icd-10-cm==1.5.0", "thefuzz>=0.22,<1", "httpx>=0.27,<1"
+]
+
+[project.optional-dependencies]
+live = ["typesafe-sdk==0.7.2"]
+test = ["pytest>=8,<10"]
+
+[project.scripts]
+decision2care = "decision2care.cli:main"
+
+[project.urls]
+Repository = "https://github.com/peterhan91/Decision2Care"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+decision2care = ["prognosis_prompts.json", "vendor/mimic_cdm/LICENSE.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

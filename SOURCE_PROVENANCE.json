@@ -1,0 +1,372 @@
+{
+  "project": "Decision2Care",
+  "release": "0.1.0",
+  "source_snapshots": {
+    "diagnosis_and_treatment": "7b029d2ecc51de1980308b6e1f03f533d77acb23",
+    "prognosis": "cdbb6a463cd3f395bf1a34dd1282c0bcc9aee063"
+  },
+  "changes": [
+    "Unified namespace and project name as Decision2Care.",
+    "Filesystem paths and historical run replay replaced by injected prepared inputs.",
+    "Medication E v3 and procedure walk v2 decision methods retained.",
+    "ICD-9 crosswalk loading optional; not used for ICD-10 inference.",
+    "Pinned model checked on every uncached response.",
+    "Forecast task prompts extracted verbatim; generic runner supports eight ED8h disease presets.",
+    "No patient records, fixed patient lists, provider credentials, caches, or experiment results included."
+  ],
+  "files": [
+    {
+      "source": "cdm_jev/agent.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "025b4b14a4322faa73605c829c0a99dd5220865329f1e2350c3c4a31604f6740",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/tools.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "bbc2c72d4ce7d0f1b554504170febbe07053b417a037b552fc6a84a8ed51bc30",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/menus.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "faae4a8e3da502911908cf99f5e318e69aeeaff9cb35f0c88d67b5e1a5f05e29",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/prompts.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "1245f1111cb854751440e88b4d0daad3ec96d27658e908dbf3f5ca510c19de67",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/diagnosis_scorer.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "303f54b251237ffc1c90a4b97980a9f6251daced76cf5859356757aead1f2e92",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/icd_hierarchy.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "3dbd505bbaf20c354c097dd7c8d1da09e4b369815611ba2936dd37ea4379107d",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/history_dialogue.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "1c53dc0ea481313d8806f61cde3987d9d48855124cf75b95b1a0880111f99d7e",
+      "symbols": [
+        "render",
+        "starter",
+        "chief_complaint",
+        "STARTER",
+        "STARTER_NO_COMPLAINT"
+      ]
+    },
+    {
+      "source": "cdm_jev/vendor/mimic_cdm/tools/utils.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "4ed19fd8e67ed3630751e90156e95829c18f2f8c361a052e1f480240af66a721",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/vendor/mimic_cdm/utils/nlp.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "6daba4cb5422ced3eccf026dac41eeb88abc5a5433eaf26baa0ee16c80599a57",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/vendor/mimic_cdm/LICENSE.txt",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "002c2696d92b5c8cf956c11072baa58eaf9f6ade995c031ea635c6a1ee342ad1",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/jev_client.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "8df8862171734258eecb38e7c5eb8f9bb9be6a32aab865a2312816c07e9eb490",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "cdm_jev/drug_selection_pilot.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "ea2cc97e584eee3744b11b5ebf3e71fab68ba7a52c70212dc61874c8459cbb9d",
+      "symbols": [
+        "PurposeSelectionV3"
+      ]
+    },
+    {
+      "source": "cdm_jev/treatment_pilot.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "09f1dfa330a1d1862789eb2dced619a4e549dc35c72209d4ff9044ec7fc807bb",
+      "symbols": [
+        "WalkV2"
+      ]
+    },
+    {
+      "source": "cdm_jev/drug_selection_pilot.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "ea2cc97e584eee3744b11b5ebf3e71fab68ba7a52c70212dc61874c8459cbb9d",
+      "symbols": [
+        "DOSE_Q",
+        "OTHER_DOSE",
+        "PURPOSE_Q",
+        "REGIMEN_Q",
+        "NO_REGIMEN",
+        "HOME_Q",
+        "HOME_OPTIONS",
+        "THERAPEUTIC",
+        "PROPHYLAXIS",
+        "SALT_V3",
+        "SAFETY_QS",
+        "MAX_ROUNDS",
+        "BLEEDING_PURPOSES",
+        "BLEEDING_DRUG",
+        "RECHOOSE_Q",
+        "UNSAFE",
+        "HOME_ANTICOAGULANT"
+      ]
+    },
+    {
+      "source": "cdm_jev/treatment_pilot.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "09f1dfa330a1d1862789eb2dced619a4e549dc35c72209d4ff9044ec7fc807bb",
+      "symbols": [
+        "CATEGORY_Q",
+        "PROC_Q",
+        "NONE",
+        "WALK_EXAMPLES",
+        "SALT_WALK2",
+        "INDICATED_Q",
+        "ADDITION_Q",
+        "approach",
+        "in_abdomen"
+      ]
+    },
+    {
+      "source": "cdm_jev/treatment_safety.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "67aabccf9fd78b23c37975c9808ada159457411b18269e99f9fef367a3cdfa8b",
+      "symbols": [
+        "NO_KNOWN",
+        "allergy_list",
+        "creatinine",
+        "egfr",
+        "safety_facts"
+      ]
+    },
+    {
+      "source": "cdm_jev/end_check.py",
+      "source_group": "diagnosis_and_treatment",
+      "sha256": "900ad2776d2597f04bd6c6f4c7e7adf4d8ac2e82b2a853b93c01d94283ffa2da",
+      "symbols": [
+        "dotted"
+      ]
+    },
+    {
+      "source": "pe_data.py",
+      "source_group": "prognosis",
+      "sha256": "76b1264488ebdc6f2f18c8fc322f2b9510e6807a8d5211ae51c095424452e19d",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "input_language.py",
+      "source_group": "prognosis",
+      "sha256": "6adf2337a9a1688469dbe69ce28c7b24e6097a390e1d9548261a9c45b8b6ea93",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "typesafe.py",
+      "source_group": "prognosis",
+      "sha256": "cb7a9354e652f379d180e05008fae2c9d817ae210d55acda5ce0e44fd03ad909",
+      "symbols": [
+        "complete module"
+      ]
+    },
+    {
+      "source": "pe_jev_choice.py",
+      "source_group": "prognosis",
+      "sha256": "57aa8d365e3ce5a76c9691e5d764c316c8ae30709d7a8f3df0a6e1f7d2921382",
+      "symbols": [
+        "validate_named_choice",
+        "accept_named_choices"
+      ]
+    },
+    {
+      "source": "sepsis_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "12a366d45c463ecdc8332b6e950df1f28d432d48381ab56be3148831cc6639ec",
+      "symbols": [
+        "NamedChoiceClient",
+        "validate_language"
+      ]
+    },
+    {
+      "source": "pe_questions.py",
+      "source_group": "prognosis",
+      "sha256": "f31d4965862b30263e41a1588a4d98051fe81ebb5cad018533dbd9c56005da5d",
+      "symbols": [
+        "WINDOWS",
+        "horizon_predictions"
+      ]
+    },
+    {
+      "source": "pe_ed8_known_tools.py",
+      "source_group": "prognosis",
+      "sha256": "c3d0b86574370fb34be8c9c099f3659829c35b2e89814e246f10670079fc242a",
+      "symbols": [
+        "validate_catalog",
+        "ToolNavigator"
+      ]
+    },
+    {
+      "source": "aki_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "ec1ea4326b3af209c294e21463d92704b1394c58949f9bdc0581b762d4ccba16",
+      "symbols": [
+        "TASK",
+        "SELECTION",
+        "FORECAST"
+      ]
+    },
+    {
+      "source": "sepsis_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "12a366d45c463ecdc8332b6e950df1f28d432d48381ab56be3148831cc6639ec",
+      "symbols": [
+        "TASK",
+        "SELECTION",
+        "FORECAST"
+      ]
+    },
+    {
+      "source": "tbi_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "4149d18fca9b3f87a292e54b921d6c054a44267d931ce4c7c3f53d8472a6d1ac",
+      "symbols": [
+        "TASK",
+        "SELECTION",
+        "FORECAST"
+      ]
+    },
+    {
+      "source": "cap_iv_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "31e7b2e4a6c29f88a717b3f8c7fd4cb01c5523425caafb4e1aae605ebda7d3bc",
+      "symbols": [
+        "TASK",
+        "SELECTION",
+        "FORECAST"
+      ]
+    },
+    {
+      "source": "ich_iv_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "4a8e3710581a2eb21d1381b47cd3d6b9cc8c3f38f3dd5037b54037e9b620e30d",
+      "symbols": [
+        "TASK",
+        "SELECTION",
+        "FORECAST"
+      ]
+    },
+    {
+      "source": "polytrauma_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "543db0ab1ad98bc3c9f3dee6facdfe77a8f9d577137e8b80b61037a36f47d24e",
+      "symbols": [
+        "TASK",
+        "SELECTION",
+        "FORECAST"
+      ]
+    },
+    {
+      "source": "aki_ards_jobs.py",
+      "source_group": "prognosis",
+      "sha256": "142d65e9fd1cc03884b32f0a53883b843e2958688190cd0f15fa12a803517704",
+      "symbols": [
+        "ARDS_TASK",
+        "ARDS_SELECTION",
+        "ARDS_FORECAST"
+      ]
+    },
+    {
+      "source": "pe_ed8_known_tools.py",
+      "source_group": "prognosis",
+      "sha256": "c3d0b86574370fb34be8c9c099f3659829c35b2e89814e246f10670079fc242a",
+      "symbols": [
+        "TASK"
+      ]
+    },
+    {
+      "source": "ich_iii_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "5fd618740119b981b2effd6270832a053e6ed43b25985cfb3cd360960e4ffea8",
+      "symbols": [
+        "TASK",
+        "SELECTION",
+        "FORECAST"
+      ]
+    },
+    {
+      "source": "cap_iii_complete_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "db3f7fbe26843c4058289425afdef04dcf15ea889bfffd95b86945a1c6cb7f3f",
+      "symbols": [
+        "TASK",
+        "SELECTION",
+        "FORECAST"
+      ]
+    },
+    {
+      "source": "aki_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "ec1ea4326b3af209c294e21463d92704b1394c58949f9bdc0581b762d4ccba16",
+      "symbols": [
+        "Navigator"
+      ]
+    },
+    {
+      "source": "pe_questions.py",
+      "source_group": "prognosis",
+      "sha256": "f31d4965862b30263e41a1588a4d98051fe81ebb5cad018533dbd9c56005da5d",
+      "symbols": [
+        "horizon_predictions"
+      ]
+    },
+    {
+      "source": "sepsis_experiment.py",
+      "source_group": "prognosis",
+      "sha256": "12a366d45c463ecdc8332b6e950df1f28d432d48381ab56be3148831cc6639ec",
+      "symbols": [
+        "encode",
+        "decode",
+        "LINE_RULE",
+        "TIMINGS"
+      ]
+    }
+  ]
+}

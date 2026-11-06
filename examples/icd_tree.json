@@ -1,0 +1,94 @@
+{
+  "nodes": {
+    "K00-K95": {
+      "code": "K00-K95",
+      "title": "Diseases of the digestive system",
+      "level": "chapter",
+      "parent": null,
+      "children": [
+        "K35-K38",
+        "K80-K87"
+      ],
+      "n_admissions": 1,
+      "n_primary": 1
+    },
+    "K35-K38": {
+      "code": "K35-K38",
+      "title": "Diseases of appendix",
+      "level": "block",
+      "parent": "K00-K95",
+      "children": [
+        "K35"
+      ],
+      "n_admissions": 1,
+      "n_primary": 1
+    },
+    "K80-K87": {
+      "code": "K80-K87",
+      "title": "Disorders of gallbladder",
+      "level": "block",
+      "parent": "K00-K95",
+      "children": [
+        "K81"
+      ],
+      "n_admissions": 1,
+      "n_primary": 1
+    },
+    "K35": {
+      "code": "K35",
+      "title": "Acute appendicitis",
+      "level": "category",
+      "parent": "K35-K38",
+      "children": [
+        "K3580"
+      ],
+      "n_admissions": 1,
+      "n_primary": 1
+    },
+    "K81": {
+      "code": "K81",
+      "title": "Cholecystitis",
+      "level": "category",
+      "parent": "K80-K87",
+      "children": [
+        "K810"
+      ],
+      "n_admissions": 1,
+      "n_primary": 1
+    },
+    "K3580": {
+      "code": "K3580",
+      "title": "Unspecified acute appendicitis",
+      "level": "code",
+      "parent": "K35",
+      "children": [],
+      "n_admissions": 1,
+      "n_primary": 1
+    },
+    "K810": {
+      "code": "K810",
+      "title": "Acute cholecystitis",
+      "level": "code",
+      "parent": "K81",
+      "children": [],
+      "n_admissions": 1,
+      "n_primary": 1
+    }
+  },
+  "chapters": [
+    "K00-K95"
+  ],
+  "block_ranges": [
+    [
+      "K35",
+      "K38",
+      "K35-K38"
+    ],
+    [
+      "K80",
+      "K87",
+      "K80-K87"
+    ]
+  ],
+  "synthetic": true
+}
