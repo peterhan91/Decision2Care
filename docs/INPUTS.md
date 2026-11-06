@@ -28,7 +28,7 @@ The diagnostic output preserves the original visible chart and a fingerprint of 
 - `doses`: `default` and the two separate anticoagulation purpose names → drug name → dose options, each with `shown`.
 - `procedure_categories`: two-digit ICD-9-CM group → ordered `[code, title]` pairs.
 
-The original research run used `purpose_regimens_v2u.json`, `drug_regimens_v3.json`, and the frequency-ordered MIMIC-IV procedure catalog. To use those locally prepared files, combine them under the three keys above without sorting or changing their option order. Preserve therapeutic and prophylactic anticoagulation as separate purposes. Replace all synthetic options before research inference.
+The original research workflow used a purpose-to-regimen table, a purpose-specific dose table, and the frequency-ordered MIMIC-IV procedure catalog. Combine those locally prepared resources under the three keys above without sorting or changing their option order. Preserve therapeutic and prophylactic anticoagulation as separate purposes. Replace all synthetic options before research inference.
 
 The initial public release accepts these prepared catalogs; their raw-MIMIC generation pipeline is outside this release. Missing catalog resources are a prerequisite to resolve locally, not a reason to run with the example catalog on real records.
 

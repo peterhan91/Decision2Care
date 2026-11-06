@@ -8,7 +8,7 @@
   "changes": [
     "Unified namespace and project name as Decision2Care.",
     "Filesystem paths and historical run replay replaced by injected prepared inputs.",
-    "Medication E v3 and procedure walk v2 decision methods retained.",
+    "Medication and procedure selection decision methods retained.",
     "ICD-9 crosswalk loading optional; not used for ICD-10 inference.",
     "Pinned model checked on every uncached response.",
     "Forecast task prompts extracted verbatim; generic runner supports eight ED8h disease presets.",

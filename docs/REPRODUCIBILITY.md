@@ -3,7 +3,7 @@
 ## What this release establishes
 
 - The core diagnostic router and ICD-10-CM scorer are available under a unified package.
-- Medication E v3 and procedure walk v2 accept an explicitly restored diagnostic chart, without depending on a historical local run directory.
+- Medication and procedure selection accept an explicitly restored diagnostic chart, without depending on a historical local run directory.
 - The forecasting router accepts a time-gated record snapshot and a read-only retrieval catalog, applies the supplied disease prompt, and makes one final four-window forecast.
 - A fresh installation can run all three synthetic workflows without model credentials or patient data.
 
@@ -40,6 +40,6 @@ For prognosis, evaluate the intended horizon separately. The returned scores are
 
 ## Local source audit
 
-The local diagnosis/treatment source snapshot contains the primary agent, record tools, ICD hierarchy, medication E v3, procedure walk v2, raw-data preparation utilities, and diagnostic/treatment evaluation scripts. The separate prognosis source contains the eight disease drivers, ED8-hour record preparation, ICU-hourly and ICU24-hour workflows, and historical frozen versions. The manuscript repository contains figure/statistical verification scripts. This first release extracts the three core inference workflows rather than uploading these complete workspaces.
+The local diagnosis/treatment source snapshot contains the primary agent, record tools, ICD hierarchy, medication selection, procedure selection, raw-data preparation utilities, and diagnostic/treatment evaluation scripts. The separate prognosis source contains the eight disease drivers, ED8-hour record preparation, ICU-hourly and ICU24-hour workflows, and historical frozen versions. The manuscript repository contains figure/statistical verification scripts. This first release extracts the three core inference workflows rather than uploading these complete workspaces.
 
 The local prognostic archive itself notes that full cohort source tables are separate. Therefore, the presence of all inference code does not imply that an arbitrary new user can reconstruct the original cohorts from this public repository alone.

@@ -1,4 +1,4 @@
-"""Decision2Care medication E v3 and procedure walk v2 decision kernels."""
+"""Decision2Care medication and procedure selection kernels."""
 from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional
@@ -101,7 +101,7 @@ def egfr(rec: Dict[str, Any]) -> Optional[float]:
     return 142 * min(scr / k, 1) ** a * max(scr / k, 1) ** -1.200 * 0.9938 ** float(rec["Age"]) * (1.012 if female else 1)
 
 def safety_facts(rec: Dict[str, Any]) -> Dict[str, Any]:
-    """The state fields E v3 and walk v2 add: the allergy list and the kidney function."""
+    """Allergy and kidney-function fields added to the treatment state."""
     al, scr, e = allergy_list(rec), creatinine(rec), egfr(rec)
     return {"allergies": al if al else ("no known drug allergies" if al == [] else "not recorded"),
             "kidney_function": ({"creatinine": f"{scr:g} mg/dL (first value of the admission)", "eGFR": f"{e:.0f} mL/min/1.73 m2 (CKD-EPI 2021)"}
@@ -123,7 +123,7 @@ class PreparedCaseAdapter:
 
 
 class MedicationSelector(PreparedCaseAdapter):
-    """E v3 on a finished run's charts. Each request's stage and key in the store go into the row's `trail`."""
+    """Medication selection on the completed diagnostic chart. Each request's stage and cache key are recorded in `trail`."""
 
     def __init__(self, case, client, purposes, doses):
         super().__init__(case, client)
@@ -260,8 +260,8 @@ class MedicationSelector(PreparedCaseAdapter):
         return (self.doses[purpose] if purpose in (THERAPEUTIC, PROPHYLAXIS) else self.doses['default']).get(drug) or []
 
 class ProcedureSelector(PreparedCaseAdapter):
-    """Walk v2 on the chart of the treatment run, with the allergy list and the kidney function (decision2care.treatment_safety.safety_facts)
-    as E v3 asks. Each request's stage and key in the store go into the row's `trail`."""
+    """Procedure selection on the completed diagnostic chart, including allergy and kidney-function information.
+    Each request's stage and cache key are recorded in `trail`."""
 
     def __init__(self, case, client, categories):
         super().__init__(case, client)

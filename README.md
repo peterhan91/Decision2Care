@@ -7,7 +7,7 @@ Decision2Care connects model scores over explicit alternatives to deterministic 
 | Workflow | Core implementation | Runnable entrypoint |
 | --- | --- | --- |
 | Diagnosis | [Evidence retrieval](src/decision2care/agent.py), [record tools](src/decision2care/tools.py), [hierarchical ICD-10-CM scoring](src/decision2care/diagnosis_scorer.py) | `decision2care diagnosis` |
-| Treatment | [Medication E v3 and procedure walk v2](src/decision2care/treatment.py) | `decision2care treatment` |
+| Treatment | [Medication and procedure selection](src/decision2care/treatment.py) | `decision2care treatment` |
 | Prognosis | [Adaptive retrieval and four-window forecast](src/decision2care/prognosis.py) | `decision2care prognosis` |
 
 The clinical decision kernels come from the local research implementation. [SOURCE_PROVENANCE.json](SOURCE_PROVENANCE.json) records source hashes and packaging changes. Project paths, historical run replay, and input loading have been replaced by portable, explicit inputs. Jev is the external decision-model backend; its actual API identifier remains `jev-1.13.0`.
