@@ -1,6 +1,17 @@
-# Decision2Care
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/decision2care-logo-dark.svg">
+    <img src="docs/assets/decision2care-logo.svg" alt="Decision2Care" width="380">
+  </picture>
+</h1>
 
-**Auditable clinical support with decision agents.**
+<p align="center"><strong>Auditable clinical support with decision agents.</strong></p>
+
+<p align="center">
+  <img src="docs/assets/decision2care-overview.png" width="100%" alt="An emergency admission passes through typed decisions, each leaving a decision record, to auditable clinical support for diagnosis, treatment and prognosis. In the example, the probability of pulmonary embolism is 5% after the history, 37% after blood tests, 45% after the abdominal CT and 96% after the chest CT.">
+</p>
+
+<p align="center"><em>Overview of the decision agent. Each step of a work-up is a typed decision whose clinical state, options, probabilities, and execution rule are recorded. The example follows a patient with pulmonary embolism.</em></p>
 
 Decision2Care connects model scores over explicit alternatives to deterministic clinical actions. This first release contains the core inference workflows for **diagnosis, treatment selection, and mortality forecasting**, with synthetic examples that can run without a model account or patient data.
 
@@ -113,6 +124,6 @@ Obtain MIMIC access from [PhysioNet](https://physionet.org/), complete the appli
 
 ## Attribution and license
 
-Decision2Care is released under the [MIT license](LICENSE). Selected MIMIC-CDM helpers retain their [original license](src/decision2care/vendor/mimic_cdm/LICENSE.txt). Data and external models retain their own terms. The release structure follows the clear separation of implementation, preparation, runs, and evaluation in [MIRA](https://github.com/Dyke-F/MIRA); Decision2Care does not include MIRA's orchestration or FHIR server.
+Decision2Care is released under the [MIT license](LICENSE). Selected MIMIC-CDM helpers retain their [original license](src/decision2care/vendor/mimic_cdm/LICENSE.txt). Data and external models retain their own terms. The Decision2Care logo and the overview figure in [docs/assets](docs/assets/) are not covered by the MIT license; all rights are reserved by the authors. The release structure follows the clear separation of implementation, preparation, runs, and evaluation in [MIRA](https://github.com/Dyke-F/MIRA); Decision2Care does not include MIRA's orchestration or FHIR server.
 
 Relevant precedents: [MIMIC-CDM](https://doi.org/10.1038/s41591-024-03097-1), [MIRA](https://doi.org/10.1038/s41586-026-10675-5), and [CLEAR](https://doi.org/10.1038/s41551-026-01741-4). The associated manuscript is titled *Auditable Clinical Support with Decision Agents*.

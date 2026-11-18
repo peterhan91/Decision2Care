@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 583.45 116.48" width="583" height="116" role="img" aria-label="Decision2Care">
+  <title>Decision2Care</title>
+  <g stroke="#3A4046" stroke-width="3.600" stroke-linejoin="round">
+    <polygon points="50.952,24.619 21.835,75.051 80.068,75.051" fill="#7D74C5"/>
+    <polygon points="50.952,24.619 21.835,75.051 3.840,31.040" fill="#E9C1CA"/>
+    <polygon points="50.952,24.619 80.068,75.051 98.064,31.040" fill="#F2DFB7"/>
+    <polygon points="21.835,75.051 80.068,75.051 50.952,112.640" fill="#A1D3CF"/>
+    <polygon points="50.952,24.619 50.952,3.840 3.840,31.040" fill="#E4E7EA"/>
+    <polygon points="21.835,75.051 3.840,85.440 50.952,112.640" fill="#F4F5F6"/>
+    <polygon points="80.068,75.051 98.064,85.440 98.064,31.040" fill="#E4E7EA"/>
+    <polygon points="50.952,24.619 50.952,3.840 98.064,31.040" fill="#F4F5F6"/>
+    <polygon points="21.835,75.051 3.840,85.440 3.840,31.040" fill="#E4E7EA"/>
+    <polygon points="80.068,75.051 98.064,85.440 50.952,112.640" fill="#F4F5F6"/>
+  </g>
+  <text x="134.95" y="80.64" font-family="Arial, Helvetica, 'Liberation Sans', sans-serif" font-weight="700" font-size="64.00" textLength="444.66" lengthAdjust="spacingAndGlyphs" fill="#F0F3F6">Decision2Care</text>
+</svg>

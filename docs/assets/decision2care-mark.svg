@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 186.440 213.235" width="186" height="213" role="img" aria-label="Decision2Care">
+  <title>Decision2Care</title>
+  <g stroke="#3A4046" stroke-width="6.618" stroke-linejoin="round">
+    <polygon points="93.220,44.814 39.697,137.519 146.744,137.519" fill="#7D74C5"/>
+    <polygon points="93.220,44.814 39.697,137.519 6.618,56.618" fill="#E9C1CA"/>
+    <polygon points="93.220,44.814 146.744,137.519 179.823,56.618" fill="#F2DFB7"/>
+    <polygon points="39.697,137.519 146.744,137.519 93.220,206.618" fill="#A1D3CF"/>
+    <polygon points="93.220,44.814 93.220,6.618 6.618,56.618" fill="#E4E7EA"/>
+    <polygon points="39.697,137.519 6.618,156.618 93.220,206.618" fill="#F4F5F6"/>
+    <polygon points="146.744,137.519 179.823,156.618 179.823,56.618" fill="#E4E7EA"/>
+    <polygon points="93.220,44.814 93.220,6.618 179.823,56.618" fill="#F4F5F6"/>
+    <polygon points="39.697,137.519 6.618,156.618 6.618,56.618" fill="#E4E7EA"/>
+    <polygon points="146.744,137.519 179.823,156.618 93.220,206.618" fill="#F4F5F6"/>
+  </g>
+</svg>
