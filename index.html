@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision2Care: Auditable Clinical Support with Decision Agents</title>
+<meta name="description" content="Decision2Care is a clinical decision agent. At each step of a work-up it generates a probability for every option, a fixed rule acts on it, and the step is recorded.">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Decision2Care">
+<meta property="og:description" content="A clinical decision agent whose work-up can be reviewed like a clinician's.">
+<meta property="og:url" content="https://peterhan91.github.io/Decision2Care/">
+<meta property="og:image" content="https://peterhan91.github.io/Decision2Care/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://peterhan91.github.io/Decision2Care/">
+<script>
+/* Motion is switched on only for readers who have not asked for less of it. Without this class the page is static. */
+if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) document.documentElement.className += ' anim';
+/* The two fonts of the first screen are fetched early. Not when the page is opened from a folder, where a browser refuses the hint. */
+if (location.protocol !== 'file:') ['400', '600'].forEach(function (w) {
+  var l = document.createElement('link');
+  l.rel = 'preload'; l.as = 'font'; l.type = 'font/woff2'; l.crossOrigin = 'anonymous';
+  l.href = 'assets/fonts/ibm-plex-sans-latin-' + w + '-normal.woff2';
+  document.head.appendChild(l);
+});
+</script>
+<style>
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/ibm-plex-sans-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:500;font-display:swap;src:url(assets/fonts/ibm-plex-sans-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url(assets/fonts/ibm-plex-sans-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:700;font-display:swap;src:url(assets/fonts/ibm-plex-sans-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url(assets/fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2")}
+
+:root{
+  /* One light theme by choice: the manuscript figures are drawn on white. The colours come from the figures and the mark. */
+  color-scheme:light;
+  --bg:#FBFCFC;
+  --surface:#FFFFFF;
+  --surface-2:#F4F7F7;
+  --ink:#131F1E;
+  --ink-2:#435250;
+  --ink-3:#627270;
+  --line:#E1E8E7;
+  --line-2:#C9D6D4;
+  --brand:#1C6E69;
+  --brand-hover:#155652;
+  --brand-soft:#EAF4F3;
+  --violet:#6A61B8;
+  --violet-soft:#F1F0FA;
+  --violet-ink:#4A4296;
+  --burgundy:#AD4059;
+  --burgundy-soft:#F9EEF1;
+  --burgundy-ink:#8C2F45;
+  --amber-soft:#FBF5E6;
+  --amber-line:#EADCB6;
+  --amber-ink:#7A500C;
+  --code-bg:#1B2729;
+  /* chart marks, validated as a set on the white surface */
+  --d-teal:#00918A;
+  --d-teal-track:#D3ECEA;
+  --d-amber:#BD7F0E;
+  --d-burgundy:#AD4059;
+  --d-grey:#868E96;
+  --d-grey-2:#C5CBD1;
+  --d-track:#EDF1F0;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --wrap:1080px;
+  --gutter:clamp(20px,4vw,40px);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:78px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:1.0625rem;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+img,svg{max-width:100%}
+h1,h2,h3,h4,p,ul,ol,dl,dd,figure,pre{margin:0}
+ul,ol{padding:0;list-style:none}
+button{font:inherit;color:inherit}
+a{color:var(--brand);text-underline-offset:.2em;text-decoration-thickness:1px}
+a:hover{text-decoration-thickness:2px}
+::selection{background:#CDE6E3}
+:focus-visible{outline:2px solid var(--violet);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.skip{position:absolute;left:12px;top:-60px;background:var(--ink);color:#fff;padding:8px 12px;border-radius:6px;z-index:90}
+.skip:focus{top:10px}
+.wrap{max-width:calc(var(--wrap) + 2*var(--gutter));margin:0 auto;padding:0 var(--gutter)}
+.num{font-variant-numeric:tabular-nums}
+.ext{width:.72em;height:.72em;margin-left:.3em;vertical-align:baseline;flex:none}
+
+/* ------------------------------------------------------------------ nav */
+.nav{position:sticky;top:0;z-index:40;background:rgba(251,252,252,.93);-webkit-backdrop-filter:saturate(1.4) blur(12px);backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:calc(var(--wrap) + 2*var(--gutter));margin:0 auto;padding:0 var(--gutter);height:58px;display:flex;align-items:center;gap:18px}
+.brand{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:1.02rem;letter-spacing:-.012em;color:var(--ink);text-decoration:none}
+.brand svg{width:20px;height:23px;flex:none}
+.nav-links{margin-left:auto;display:flex;align-items:center;gap:2px}
+.nav-link{padding:7px 10px;border-radius:6px;font-size:.9rem;color:var(--ink-2);text-decoration:none;white-space:nowrap}
+.nav-link:hover{color:var(--ink);background:var(--surface-2)}
+.nav-link[aria-current="true"]{color:var(--brand)}
+.nav-cta{margin-left:8px;padding:6px 14px;border:1px solid var(--line-2);border-radius:7px;background:var(--surface);font-size:.9rem;font-weight:500;color:var(--ink);text-decoration:none}
+.nav-cta:hover{border-color:var(--ink-3)}
+@media (max-width:900px){.nav-link{display:none}}
+
+/* ------------------------------------------------------------------ buttons */
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:.65rem 1.1rem;border-radius:7px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:500;font-size:.93rem;line-height:1.2;text-decoration:none;cursor:pointer;transition:background-color .15s,border-color .15s}
+.btn:hover{border-color:var(--ink-3);background:var(--surface-2)}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.btn-sm{padding:.4rem .72rem;font-size:.82rem}
+.btn svg{width:14px;height:14px;flex:none}
+
+/* ------------------------------------------------------------------ landing */
+.landing{position:relative;min-height:min(calc(100vh - 59px),820px);display:grid;place-items:center;overflow:hidden;padding:64px var(--gutter) 96px;text-align:center;border-bottom:1px solid var(--line)}
+.landing-bg{position:absolute;inset:0;pointer-events:none}
+.landing-bg img{position:absolute;height:auto;border-radius:12px;filter:blur(3px);opacity:.5;box-shadow:0 24px 60px -34px rgba(19,31,30,.4)}
+.lb1{width:min(44%,660px);left:-5%;top:5%;--r:-4deg;transform:rotate(-4deg)}
+.lb2{width:min(27%,410px);right:1.5%;top:4%;--r:5deg;transform:rotate(5deg)}
+.lb3{width:min(28%,420px);left:4.5%;bottom:2%;--r:3deg;transform:rotate(3deg)}
+.lb4{width:min(44%,660px);right:-4%;bottom:3%;--r:-3deg;transform:rotate(-3deg)}
+.landing-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 58% 54% at 50% 47%,var(--bg) 0,rgba(251,252,252,.92) 40%,rgba(251,252,252,0) 78%)}
+.landing-in{position:relative;max-width:900px}
+.landing-mark{width:58px;height:66px;display:block;margin:0 auto 22px}
+.wordmark{font-size:clamp(3rem,9vw,6.2rem);font-weight:600;letter-spacing:-.036em;line-height:1}
+.wordmark span{color:var(--brand)}
+.tagline{font-size:clamp(1.08rem,2vw,1.36rem);line-height:1.45;color:var(--ink-2);max-width:42ch;margin:22px auto 0;text-wrap:balance}
+.nb{white-space:nowrap}
+.landing .btns{justify-content:center;margin-top:30px}
+.cue{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);text-decoration:none;padding:6px 10px}
+.cue:hover{color:var(--ink)}
+@media (max-width:640px){
+  .landing{min-height:min(calc(100vh - 59px),640px)}
+  .lb1{width:70%;left:-16%;top:3%}.lb2{width:46%;right:-8%;top:6%}.lb3{width:46%;left:-6%;bottom:6%}.lb4{width:70%;right:-18%;bottom:2%}
+  .landing-bg::after{background:radial-gradient(ellipse 96% 52% at 50% 47%,var(--bg) 0,rgba(251,252,252,.92) 46%,rgba(251,252,252,0) 82%)}
+}
+/* the one load sequence: the figures settle in behind the name */
+@keyframes settle{from{opacity:0;transform:rotate(var(--r)) translateY(18px) scale(1.03)}to{opacity:.5;transform:rotate(var(--r))}}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.anim .landing-bg img{animation:settle 1.1s cubic-bezier(.2,.7,.2,1) both}
+.anim .lb2{animation-delay:.08s}.anim .lb3{animation-delay:.16s}.anim .lb4{animation-delay:.24s}
+.anim .landing-in > *{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+.anim .landing-in > :nth-child(2){animation-delay:.08s}.anim .landing-in > :nth-child(3){animation-delay:.16s}.anim .landing-in > :nth-child(4){animation-delay:.24s}
+
+/* ------------------------------------------------------------------ shared pieces */
+.eyebrow{font-family:var(--mono);font-size:.71rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);line-height:1.5}
+.sec{padding-top:clamp(72px,9vw,112px)}
+.sec-h{font-size:clamp(1.55rem,2.8vw,1.95rem);font-weight:600;letter-spacing:-.022em;line-height:1.18;max-width:25em;text-wrap:balance}
+.sec-lead{font-size:1.08rem;line-height:1.62;color:var(--ink-2);max-width:64ch;margin-top:14px}
+.note{font-size:.84rem;line-height:1.55;color:var(--ink-3);max-width:78ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 22px 22px;min-width:0}
+.tcard h3{font-size:1.04rem;font-weight:600;letter-spacing:-.008em;line-height:1.3;margin-top:8px}
+.tcard p{font-size:.95rem;line-height:1.58;color:var(--ink-2);margin-top:8px}
+.tcard.is-note{background:var(--amber-soft);border-color:var(--amber-line)}
+.tcard.is-note p{color:#4E4428}
+.tcard p.eyebrow,.row-text p.eyebrow,.below p.eyebrow{font-size:.71rem;line-height:1.5;margin-top:0;color:var(--ink-3)}
+.tcard.is-note p.eyebrow{color:var(--amber-ink)}
+.cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:30px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid2 > *{min-width:0}
+@media (max-width:820px){.cards3,.grid2{grid-template-columns:1fr}}
+.c-title{font-weight:600;font-size:.96rem;letter-spacing:-.006em;line-height:1.3}
+.c-sub{font-size:.82rem;color:var(--ink-3);margin-top:2px;line-height:1.45}
+.c-note{font-size:.8rem;color:var(--ink-3);margin-top:12px;line-height:1.5}
+.chip{display:inline-block;font-size:.74rem;font-weight:500;border-radius:99px;padding:2px 9px;background:var(--amber-soft);color:var(--amber-ink);border:1px solid var(--amber-line)}
+.ok-chip{display:inline-block;font-size:.76rem;font-weight:500;border-radius:99px;padding:2px 10px;background:var(--brand-soft);color:var(--brand)}
+.no-chip{display:inline-block;font-size:.76rem;font-weight:500;border-radius:99px;padding:2px 10px;background:var(--burgundy-soft);color:var(--burgundy-ink)}
+.code-chip{display:inline-block;font-family:var(--mono);font-weight:500;font-size:.82rem;padding:2px 8px;border-radius:6px;background:var(--violet-soft);color:var(--violet-ink)}
+
+/* native product visuals: a framed card with a title strip */
+.mock{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(19,31,30,.05),0 26px 50px -34px rgba(19,31,30,.3)}
+.strip{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);font-family:var(--mono);font-size:.72rem;letter-spacing:.02em;color:var(--ink-3)}
+.mock-sec{padding:15px 18px 17px}
+.mock-sec + .mock-sec{border-top:1px solid var(--line)}
+.mock-k{font-family:var(--mono);font-size:.69rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px}
+.mock-q{font-size:.96rem;font-weight:600;line-height:1.35;margin-bottom:11px}
+.mock-foot{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);background:var(--surface-2);font-size:.84rem;color:var(--ink-2);line-height:1.4}
+
+/* option rows of a typed question */
+.opts{display:grid;gap:8px}
+.opt{display:grid;grid-template-columns:minmax(96px,34%) minmax(0,1fr) 38px;gap:10px;align-items:center;font-size:.88rem;line-height:1.25}
+.opt .track{position:relative;height:12px;background:var(--d-track);border-radius:0 4px 4px 0}
+.opt .track i{position:absolute;left:0;top:0;height:12px;width:calc(var(--v)*100%);min-width:2px;background:var(--d-grey);border-radius:0 4px 4px 0;transition:width .45s cubic-bezier(.2,.7,.2,1)}
+.opt.is-c .track i{background:var(--d-teal)}
+.opt.is-c .ol{font-weight:600}
+.opt .ov{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.opt .ol small{display:block;font-size:.7rem;font-weight:500;color:var(--brand);margin-top:1px}
+.thr .track::after{content:"";position:absolute;left:50%;top:-4px;bottom:-4px;width:0;border-left:2px solid var(--ink)}
+.thr-key{display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--ink-3);margin-top:10px}
+.thr-key i{display:inline-block;width:0;height:14px;border-left:2px solid var(--ink)}
+.rule{font-size:.84rem;color:var(--ink-2);margin-top:12px;padding-top:11px;border-top:1px solid var(--line);line-height:1.45}
+.rule b{color:var(--ink);font-weight:600}
+/* one logged decision */
+.seg{display:flex;gap:2px;height:8px;max-width:230px;margin:5px 0 7px}
+.seg i{display:block;height:8px;background:var(--d-grey-2);min-width:2px}
+.seg i.c{background:var(--d-teal)}
+.seg i:first-child{border-radius:99px 0 0 99px}
+.seg i:last-child{border-radius:0 99px 99px 0}
+.rec{padding:4px 18px 8px}
+.rec div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.rec div:first-child{border-top:0}
+.rec dt{font-family:var(--mono);font-size:.74rem;line-height:1.75;color:var(--ink-3)}
+.rec dd{font-size:.9rem;line-height:1.5}
+@media (max-width:420px){.rec div{grid-template-columns:1fr;gap:0}}
+
+/* ------------------------------------------------------------------ intro */
+.intro{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(32px,5vw,64px);align-items:center;padding-top:clamp(64px,8vw,96px)}
+.intro-h{font-size:clamp(2rem,4.4vw,2.95rem);font-weight:600;letter-spacing:-.03em;line-height:1.1;text-wrap:balance}
+.intro-h span{color:var(--brand)}
+.intro-p{font-size:1.08rem;line-height:1.62;color:var(--ink-2);margin-top:22px;max-width:34em}
+.intro .btns{margin-top:26px}
+@media (max-width:900px){.intro{grid-template-columns:1fr}}
+.story{padding:16px 12px 8px}
+.story-case{font-size:.86rem;line-height:1.45;color:var(--ink-2);padding:0 6px 12px}
+.story-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.story-step{text-align:center;min-width:0}
+.story-step svg{width:min(92%,104px);height:auto;display:block;margin:0 auto}
+.story-step b{display:block;font-size:.8rem;font-weight:600;line-height:1.25;margin-top:2px}
+.story-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.76rem;color:var(--ink-2);margin-top:16px;padding:0 6px}
+.story-legend .t{font-weight:600;color:var(--ink);margin-right:auto}
+.story-legend span{display:inline-flex;align-items:center;gap:6px}
+.story-legend i{width:10px;height:10px;border-radius:50%;background:var(--d-teal)}
+.story-legend i.b{background:var(--d-amber)}
+.story-chart{display:block;width:100%;height:136px;overflow:visible;margin-top:2px}
+.story-chart .grid{stroke:var(--line);stroke-width:1}
+.story-chart .tick{font-family:var(--sans);font-size:10px;fill:var(--ink-3)}
+.story-chart .seg{stroke-width:2;stroke-linecap:round;fill:none}
+.story-chart .a{stroke:var(--d-teal)}.story-chart .b{stroke:var(--d-amber)}
+.story-chart .dot{stroke:var(--surface);stroke-width:2}
+.story-chart .dot.a{fill:var(--d-teal)}.story-chart .dot.b{fill:var(--d-amber)}
+.story-chart .lab{font-family:var(--sans);font-size:12px;font-weight:600;fill:var(--ink);font-variant-numeric:tabular-nums}
+.story-chart .lab.q{font-weight:500;fill:var(--ink-3);font-size:11px}
+.story-chart .hit{fill:transparent}
+.story-chart .hit:hover,.story-chart .hit:focus-visible{fill:rgba(0,145,138,.06);outline:none}
+/* drawn once when the card scrolls into view */
+.anim.can-draw .story-chart .seg{stroke-dasharray:1;stroke-dashoffset:0;transition:stroke-dashoffset .5s ease-in-out}
+.anim.can-draw .reveal:not(.is-in) .seg{stroke-dashoffset:1}
+.anim .story-chart .dot,.anim .story-chart .lab{transition:opacity .3s ease}
+.anim .reveal:not(.is-in) .dot,.anim .reveal:not(.is-in) .lab{opacity:0}
+.anim .reveal:not(.is-in) .opt .track i{width:0}
+.anim .story-chart .seg.t2{transition-delay:.15s}.anim .story-chart .seg.t3{transition-delay:.65s}.anim .story-chart .seg.t4{transition-delay:1.15s}
+.anim .story-chart .dot.t2,.anim .story-chart .lab.t2{transition-delay:.55s}.anim .story-chart .dot.t3,.anim .story-chart .lab.t3{transition-delay:1.05s}.anim .story-chart .dot.t4,.anim .story-chart .lab.t4{transition-delay:1.55s}
+.anim .reveal .opt:nth-child(1) .track i{transition-delay:1.8s}.anim .reveal .opt:nth-child(2) .track i{transition-delay:1.9s}.anim .reveal .opt:nth-child(3) .track i{transition-delay:2s}
+
+/* ------------------------------------------------------------------ player */
+.demo{padding-top:clamp(56px,7vw,84px)}
+.player{margin-top:26px}
+.seg-tabs{display:inline-flex;flex-wrap:wrap;gap:2px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.seg-tab{border:0;background:transparent;padding:5px 11px;border-radius:6px;font-family:var(--sans);font-weight:500;font-size:.8rem;letter-spacing:0;color:var(--ink-2);cursor:pointer}
+.seg-tab:hover{color:var(--ink)}
+.seg-tab[aria-selected="true"]{background:var(--brand);color:#fff}
+.rp-blurb{padding:14px 18px;font-size:.98rem;line-height:1.5;border-bottom:1px solid var(--line)}
+.rp-blurb span{display:block;font-size:.8rem;color:var(--ink-3);margin-top:3px}
+.rp-main{display:grid;grid-template-columns:minmax(230px,292px) minmax(0,1fr)}
+.rp-list{border-right:1px solid var(--line);padding:10px 8px;display:grid;gap:2px;align-content:start}
+.rp-item{display:grid;grid-template-columns:24px minmax(0,1fr) 34px;gap:8px;align-items:center;width:100%;text-align:left;border:0;background:transparent;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:.84rem;line-height:1.25}
+.rp-item:hover{background:var(--surface-2)}
+.rp-item[aria-current="step"]{background:var(--brand-soft)}
+.rp-item .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:600;background:var(--d-track);color:var(--ink-2)}
+.rp-item[aria-current="step"] .n{background:var(--brand);color:#fff}
+.rp-item .t{min-width:0}
+.rp-item .t i{display:block;height:4px;border-radius:99px;background:var(--d-teal-track);margin-top:4px;overflow:hidden;font-style:normal}
+.rp-item .t i u{display:block;height:4px;width:calc(var(--v)*100%);min-width:2px;background:var(--d-teal);border-radius:99px}
+.rp-item .p{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;font-size:.8rem}
+.rp-list-head{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;padding:2px 8px 6px;font-size:.72rem;color:var(--ink-3)}
+.rp-detail{padding:16px 20px 18px;display:grid;gap:16px;align-content:start;min-width:0}
+.rp-h{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.rp-h h3{font-size:1.18rem;font-weight:600;letter-spacing:-.014em}
+.rp-h .k{font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;color:var(--ink-3)}
+.rp-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 24px}
+.rp-block h4{font-size:.8rem;font-weight:500;color:var(--ink-3);margin-bottom:8px}
+.rp-block .none{font-size:.88rem;color:var(--ink-2);line-height:1.5}
+.rp-find{font-size:.98rem;line-height:1.5}
+.rp-noul{font-size:.78rem;color:var(--ink-3);margin-top:10px;line-height:1.45}
+.rp-noul b{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.dx{display:grid;gap:8px}
+.dx-row{display:grid;grid-template-columns:minmax(104px,36%) minmax(0,1fr) 38px;gap:10px;align-items:center;font-size:.88rem;line-height:1.25}
+.dx-row .track{position:relative;height:12px;background:var(--d-track);border-radius:0 4px 4px 0}
+.dx-row .track i{position:absolute;left:0;top:0;height:12px;width:calc(var(--v)*100%);background:var(--c,var(--d-grey));border-radius:0 4px 4px 0;transition:width .45s cubic-bezier(.2,.7,.2,1)}
+.dx-row .dv{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.dx-row.is-true .dl{font-weight:600}
+.dx-row .dl small{display:block;font-size:.7rem;font-weight:400;color:var(--ink-3)}
+.icd{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;font-size:.9rem}
+.player-ctrl{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--surface-2)}
+.pc-btn{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--line-2);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink);padding:0;transition:border-color .15s,background-color .15s}
+.pc-btn:hover{border-color:var(--ink-3)}
+.pc-btn svg{width:14px;height:14px}
+.pc-btn[disabled]{opacity:.4;cursor:default}
+.pc-play{width:40px;height:40px;background:var(--brand);border-color:var(--brand);color:#fff}
+.pc-play:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.pc-play svg{width:16px;height:16px}
+.pc-track{flex:1;display:flex;gap:3px;min-width:40px}
+.pc-track button{position:relative;flex:1;height:6px;border-radius:3px;border:0;background:var(--line-2);cursor:pointer;padding:0;transition:background-color .2s}
+.pc-track button::before{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px}
+.pc-track button.done{background:var(--brand)}
+.pc-count{font-family:var(--mono);font-size:.74rem;color:var(--ink-3);white-space:nowrap;min-width:13ch;text-align:right}
+@media (max-width:820px){
+  .rp-main{grid-template-columns:1fr}
+  .rp-list{border-right:0;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px;padding:12px}
+  .rp-list-head{display:none}
+  .rp-item{width:auto;display:block;padding:0;border-radius:50%}
+  .rp-item .t,.rp-item .p{display:none}
+  .rp-item .n{width:30px;height:30px;font-size:.8rem}
+  .rp-item[aria-current="step"]{background:transparent}
+  .rp-cols{grid-template-columns:1fr}
+  .pc-count{min-width:0}
+}
+
+/* ------------------------------------------------------------------ stats */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(16px,2.4vw,28px);padding-top:clamp(48px,6vw,68px)}
+.stat{border-top:2px solid var(--brand);padding-top:14px}
+.stat b{display:block;font-size:clamp(1.45rem,2.5vw,1.85rem);font-weight:600;letter-spacing:-.025em;line-height:1.1}
+.stat span{display:block;font-size:.88rem;line-height:1.5;color:var(--ink-3);margin-top:8px}
+@media (max-width:820px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.stats{grid-template-columns:1fr}}
+
+/* ------------------------------------------------------------------ tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+caption{caption-side:top;text-align:left;font-weight:600;font-size:.96rem;padding:16px 18px 10px}
+th,td{text-align:left;padding:10px 18px;border-top:1px solid var(--line);vertical-align:top;line-height:1.45}
+thead th{font-family:var(--mono);font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:400;background:var(--surface-2)}
+tbody th{font-weight:500;color:var(--ink-2);width:28%}
+td.is-d2c,th.is-d2c{background:#F1F8F7}
+td.is-d2c{font-weight:600}
+thead th.is-d2c{color:var(--brand)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cmp{margin-top:30px}
+.cmp td{width:36%}
+@media (max-width:620px){.cmp table{min-width:600px}}
+
+/* ------------------------------------------------------------------ alternating rows */
+.rows{margin-top:clamp(12px,2vw,24px)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,4.6vw,60px);align-items:center;padding:clamp(40px,5vw,60px) 0}
+.row + .row,.row + .below + .row{border-top:1px solid var(--line)}
+.row-flip .row-text{order:2}
+.row-text h3{font-size:clamp(1.22rem,2vw,1.4rem);font-weight:600;letter-spacing:-.016em;line-height:1.25;margin-top:10px;text-wrap:balance}
+.row-text p{font-size:1.01rem;line-height:1.64;color:var(--ink-2);margin-top:14px}
+.row-text .btn{margin-top:18px}
+.below{padding-bottom:clamp(40px,5vw,60px);margin-top:calc(-1*clamp(8px,1.6vw,20px))}
+.below > * + *{margin-top:16px}
+.below-p{font-size:1.01rem;line-height:1.64;color:var(--ink-2);max-width:72ch}
+.sub-head h3{font-size:clamp(1.15rem,1.9vw,1.3rem);font-weight:600;letter-spacing:-.014em;line-height:1.25;margin-top:8px}
+.sub-head p:not(.eyebrow){font-size:1.01rem;line-height:1.6;color:var(--ink-2);margin-top:8px;max-width:72ch}
+.cards3-tight{margin-top:16px}
+@media (max-width:860px){.row{grid-template-columns:1fr;gap:26px}.row-flip .row-text{order:0}}
+
+/* ------------------------------------------------------------------ figures from the manuscript */
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.fig-tabs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.fig-tabs .eyebrow{margin-right:auto}
+.fig-tablist{display:flex;gap:4px}
+.fig-tab{min-width:32px;height:28px;padding:0 9px;border-radius:6px;border:1px solid transparent;background:transparent;font-family:var(--mono);font-weight:500;font-size:.78rem;color:var(--ink-2);cursor:pointer}
+.fig-tab:hover{color:var(--ink)}
+.fig-tab[aria-selected="true"]{background:var(--surface);border-color:var(--line-2);color:var(--ink)}
+.fig-stage{position:relative;display:block;width:100%;border:0;padding:16px;background:#fff;cursor:zoom-in}
+.fig-stage img{display:block;width:100%;height:auto}
+.fig-stage img + img{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.fig-zoom{position:absolute;right:12px;bottom:12px;display:inline-flex;gap:6px;align-items:center;padding:5px 11px;border-radius:99px;background:rgba(19,31,30,.84);color:#fff;font-size:.74rem;font-weight:500;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s}
+.fig-zoom svg{width:11px;height:11px}
+.fig-stage:hover .fig-zoom,.fig-stage:focus-visible .fig-zoom{opacity:1;transform:none}
+@media (hover:none){.fig-zoom{opacity:1;transform:none}}
+.fig-cap{padding:12px 16px 14px;border-top:1px solid var(--line);font-size:.84rem;line-height:1.52;color:var(--ink-3)}
+
+/* ------------------------------------------------------------------ charts */
+.bars{display:grid;gap:9px;margin-top:14px}
+.bar{display:grid;grid-template-columns:minmax(112px,38%) minmax(0,1fr);gap:10px;align-items:center;font-size:.85rem;border-radius:5px;line-height:1.25}
+.bar .bl small{display:block;color:var(--ink-3);font-size:.72rem}
+.bar .track{position:relative;height:14px;margin-right:var(--pad,64px)}
+.bar .fill{position:absolute;left:0;top:0;height:14px;width:calc(var(--f)*100%);min-width:3px;background:var(--d-grey);border-radius:0 4px 4px 0}
+.bar .val{position:absolute;left:calc(var(--f)*100% + 8px);top:50%;transform:translateY(-50%);font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.bar .val small{font-weight:400;color:var(--ink-3);font-size:.72rem;margin-left:5px}
+.bar.is-d2c .fill{background:var(--d-teal)}
+.bar.is-d2c .bl{font-weight:600}
+.bar.is-doc .fill{background:var(--ink-2)}
+.bar.is-accent .fill{background:var(--d-teal)}
+.bar .ci{position:absolute;top:6px;height:2px;left:calc(var(--lo)*100%);width:calc((var(--hi) - var(--lo))*100%);background:var(--ink);border-radius:2px}
+.bar .ci::before,.bar .ci::after{content:"";position:absolute;top:-3px;width:2px;height:8px;background:var(--ink)}
+.bar .ci::before{left:0}.bar .ci::after{right:0}
+.bar:hover .fill,.bar:focus-visible .fill{filter:brightness(1.08)}
+.chart + .chart{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.8rem;color:var(--ink-2);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend svg{width:14px;height:14px;flex:none}
+.dotplot{margin-top:8px}
+.dotplot svg{display:block;width:100%;height:auto;overflow:visible}
+.dotplot text{font-family:var(--sans);fill:var(--ink)}
+.dotplot .tick{fill:var(--ink-3);font-size:11px;font-variant-numeric:tabular-nums}
+.dotplot .lab{font-size:12.5px}
+.dotplot .labn{fill:var(--ink-3);font-size:11px}
+.dotplot .grid{stroke:var(--d-track);stroke-width:1}
+.dotplot .base{stroke:var(--line-2);stroke-width:1}
+.dotplot .hit{fill:transparent;cursor:default}
+.dotplot g.row:hover .hit,.dotplot g.row:focus-visible .hit{fill:rgba(0,145,138,.07)}
+.dotplot g.row:focus-visible{outline:none}
+.dotplot .cmp{fill:var(--surface);stroke:#59616A;stroke-width:1.5}
+.dotplot .rng{stroke:var(--d-teal);stroke-width:2;stroke-linecap:round}
+.dotplot .d2c{fill:var(--d-teal);stroke:var(--surface);stroke-width:2}
+.chart-foot{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin-top:12px}
+.chart-foot .c-note{margin-top:0;max-width:72ch}
+.tv{margin-top:14px}
+.tv table{font-size:.82rem}
+.tv th,.tv td{padding:7px 12px}
+.tv caption{font-size:.86rem;font-weight:500;padding:12px 12px 8px}
+.units-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-top:14px}
+.units-h{font-size:.88rem;font-weight:600}
+.units-h small{display:block;font-weight:400;color:var(--ink-3);font-size:.78rem;margin-top:1px}
+.units{display:grid;grid-template-columns:repeat(30,minmax(0,12px));gap:2px;margin-top:9px}
+.units i{aspect-ratio:1/1;border-radius:2px;background:var(--d-teal)}
+.units i.w{background:var(--d-burgundy);border-radius:50%}
+.units.is-flag i{background:#A9D8D4}
+.units.is-flag i.w{background:#DDA3B1}
+.units i.w.hl{outline:2px solid var(--ink);outline-offset:1px}
+.trace{display:grid;gap:8px;margin-top:14px;counter-reset:t}
+.trace li{counter-increment:t;display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:.88rem;line-height:1.3}
+.trace li::before{content:counter(t);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:600;background:var(--d-track);color:var(--ink-2)}
+.trace small{display:block;color:var(--ink-3);font-size:.76rem;margin-top:1px}
+.trace .ok-chip,.trace .no-chip{white-space:nowrap}
+.order{margin-top:16px;padding:12px 14px;border-radius:8px;background:var(--brand-soft);font-size:.92rem;font-weight:500;line-height:1.4}
+.order .eyebrow{display:block;margin-bottom:3px;color:var(--brand)}
+@media (max-width:480px){.trace li{grid-template-columns:24px minmax(0,1fr)}.trace li > :last-child{grid-column:2;justify-self:start}}
+
+/* ------------------------------------------------------------------ system, limits, run it */
+.sys-fig{margin-top:30px}
+.defs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 48px;margin-top:26px}
+.defs div{display:grid;grid-template-columns:132px minmax(0,1fr);gap:14px;padding:13px 0;border-top:1px solid var(--line)}
+.defs dt{font-family:var(--mono);font-size:.8rem;line-height:1.7;color:var(--ink)}
+.defs dd{font-size:.93rem;line-height:1.56;color:var(--ink-2)}
+@media (max-width:820px){.defs{grid-template-columns:1fr}}
+@media (max-width:480px){.defs div{grid-template-columns:1fr;gap:2px}}
+.limits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 48px;margin-top:22px}
+.limits li{padding:13px 0 13px 20px;border-top:1px solid var(--line);position:relative;font-size:.96rem;line-height:1.56;color:var(--ink-2)}
+.limits li::before{content:"";position:absolute;left:0;top:1.45em;width:9px;height:2px;background:var(--burgundy)}
+@media (max-width:820px){.limits{grid-template-columns:1fr}}
+.steps{display:grid;gap:26px;margin-top:30px;max-width:860px;counter-reset:st}
+.step{min-width:0}
+.step h3{font-size:1.04rem;font-weight:600}
+.step h3::before{counter-increment:st;content:counter(st) ". "}
+.step p{font-size:.96rem;line-height:1.58;color:var(--ink-2);margin-top:4px}
+.codebox{position:relative;margin-top:10px}
+.code{max-width:100%;background:var(--code-bg);color:#E6EDEC;border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:.83rem;line-height:1.68;tab-size:2}
+.code code{font-family:inherit;white-space:pre}
+.code .cm{color:#93AAA7}
+.copy{position:absolute;right:8px;top:8px;padding:4px 9px;border-radius:6px;border:1px solid #3B4B4D;background:#27373A;color:#DCE6E5;font-size:.74rem;font-weight:500;cursor:pointer}
+.copy:hover{background:#314447}
+.repos h3 a{color:var(--brand);text-decoration:none}
+.repos h3 a:hover{text-decoration:underline}
+
+/* ------------------------------------------------------------------ team */
+.team{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 20px;margin-top:32px}
+.person{display:grid;grid-template-columns:54px minmax(0,1fr);gap:12px;align-items:center;min-width:0}
+.ph{position:relative;width:54px;height:54px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand);font-weight:600;font-size:.9rem;letter-spacing:.01em}
+.g-aachen .ph{background:var(--burgundy-soft);color:var(--burgundy-ink)}
+.g-dresden .ph{background:var(--violet-soft);color:var(--violet-ink)}
+.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.person b{display:block;font-size:.95rem;font-weight:600;line-height:1.25}
+.person b sup{font-weight:400;color:var(--ink-3);font-size:.66em;margin-left:1px}
+.person .aff{display:block;font-size:.78rem;color:var(--ink-3);line-height:1.35;margin-top:2px}
+/* with photographs in assets/authors/ the grid switches to large square pictures */
+.team.has-photos{gap:30px 22px}
+.team.has-photos .person{grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
+.team.has-photos .ph{width:100%;height:auto;aspect-ratio:1/1;border-radius:10px;font-size:1.9rem;font-weight:500}
+.team.has-photos .ph::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(19,31,30,.09);pointer-events:none}
+.team.has-photos .ph img{transition:transform .3s ease}
+.team.has-photos .person:hover .ph img{transform:scale(1.03)}
+@media (max-width:940px){.team{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:680px){.team{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.team:not(.has-photos){grid-template-columns:1fr}}
+.marks{margin-top:26px}
+.affils{font-size:.8rem;color:var(--ink-3);line-height:1.5;columns:2;column-gap:40px;margin-top:14px}
+.affils li{display:grid;grid-template-columns:24px minmax(0,1fr);break-inside:avoid;padding-bottom:4px}
+.affils li b{font-weight:500;color:var(--ink-2);font-variant-numeric:tabular-nums}
+@media (max-width:820px){.affils{columns:1}}
+
+/* ------------------------------------------------------------------ paper, footer */
+.paper{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:12px;padding:26px 28px 28px}
+.paper h2{font-size:clamp(1.35rem,2.4vw,1.7rem);font-weight:600;letter-spacing:-.02em;line-height:1.2;margin-top:10px}
+.paper-authors{font-size:.98rem;line-height:1.55;color:var(--ink-2);margin-top:12px;max-width:80ch}
+.paper-aff{font-size:.84rem;color:var(--ink-3);margin-top:8px;line-height:1.5}
+.paper .btns{margin-top:18px}
+.bib{margin-top:18px}
+.bib summary{cursor:pointer;font-size:.9rem;font-weight:500;color:var(--ink-2);width:max-content;padding:4px 0}
+.bib summary:hover{color:var(--ink)}
+.contact{font-size:.98rem;color:var(--ink-2);margin-top:22px}
+footer{margin-top:clamp(72px,9vw,112px);border-top:1px solid var(--line)}
+.foot{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between;padding-top:24px;padding-bottom:44px;font-size:.84rem;color:var(--ink-3)}
+.foot p{max-width:64ch;line-height:1.55}
+.foot nav{display:flex;flex-wrap:wrap;gap:6px 18px}
+.foot a{color:var(--ink-2)}
+
+/* ------------------------------------------------------------------ tooltip and figure viewer */
+.tip{position:fixed;z-index:95;pointer-events:none;background:var(--ink);color:#fff;border-radius:8px;padding:8px 10px;font-size:.78rem;line-height:1.45;max-width:300px;box-shadow:0 10px 24px -12px rgba(0,0,0,.5)}
+.tip-row b{font-variant-numeric:tabular-nums;font-weight:600}
+.tip-row span{color:#C6D2D0}
+.tip-h{font-weight:600;margin-bottom:3px}
+.viewer{position:fixed;inset:0;z-index:80;background:rgba(14,22,22,.96);display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+.viewer[hidden]{display:none}
+.v-bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding:10px 14px;color:#fff}
+.v-title{margin-right:auto;font-size:.92rem;font-weight:500;color:#E6EDEC;min-width:0}
+.v-tabs{display:flex;flex-wrap:wrap;gap:3px}
+.v-tab,.v-btn{height:32px;padding:0 11px;border-radius:7px;border:1px solid #3B4B4D;background:#1F2D2F;color:#DCE6E5;font-size:.82rem;font-weight:500;cursor:pointer}
+.v-tab{font-family:var(--mono);font-size:.78rem}
+.v-tab:hover,.v-btn:hover{background:#2A3B3D}
+.v-tab[aria-selected="true"]{background:#E6EDEC;border-color:#E6EDEC;color:var(--ink)}
+.v-stage{overflow:auto;display:grid;place-items:center;padding:0 14px 6px}
+.v-stage img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;background:#fff;border-radius:6px;cursor:zoom-in}
+.viewer.is-zoom .v-stage{place-items:start center}
+.viewer.is-zoom .v-stage img{max-width:none;max-height:none;cursor:zoom-out}
+.v-cap{padding:8px 18px 14px;color:#BFCCCA;font-size:.84rem;line-height:1.5;max-width:118ch;margin:0 auto;text-align:center}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .opt .track i,.dx-row .track i,.btn,.fig-zoom,.team.has-photos .ph img{transition:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="d2c-mark" viewBox="0 0 186.44 213.235">
+      <g stroke="#3A4046" stroke-width="6.618" stroke-linejoin="round">
+        <polygon points="93.220,44.814 39.697,137.519 146.744,137.519" fill="#7D74C5"/>
+        <polygon points="93.220,44.814 39.697,137.519 6.618,56.618" fill="#E9C1CA"/>
+        <polygon points="93.220,44.814 146.744,137.519 179.823,56.618" fill="#F2DFB7"/>
+        <polygon points="39.697,137.519 146.744,137.519 93.220,206.618" fill="#A1D3CF"/>
+        <polygon points="93.220,44.814 93.220,6.618 6.618,56.618" fill="#E4E7EA"/>
+        <polygon points="39.697,137.519 6.618,156.618 93.220,206.618" fill="#F4F5F6"/>
+        <polygon points="146.744,137.519 179.823,156.618 179.823,56.618" fill="#E4E7EA"/>
+        <polygon points="93.220,44.814 93.220,6.618 179.823,56.618" fill="#F4F5F6"/>
+        <polygon points="39.697,137.519 6.618,156.618 6.618,56.618" fill="#E4E7EA"/>
+        <polygon points="146.744,137.519 179.823,156.618 93.220,206.618" fill="#F4F5F6"/>
+      </g>
+    </symbol>
+    <symbol id="i-ext" viewBox="0 0 12 12"><path d="M4 2h6v6M10 2 2.5 9.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-play" viewBox="0 0 16 16"><path d="M4.5 2.6v10.8a.6.6 0 0 0 .92.5l8.3-5.4a.6.6 0 0 0 0-1L5.42 2.1a.6.6 0 0 0-.92.5Z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 16 16"><path d="M4 2.5h2.6v11H4zM9.4 2.5H12v11H9.4z" fill="currentColor"/></symbol>
+    <symbol id="i-again" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.6-3.66" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M13.2 1.8v3.4H9.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-next" viewBox="0 0 16 16"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-zoom" viewBox="0 0 12 12"><path d="M7.2 1.5h3.3v3.3M4.8 10.5H1.5V7.2M10.5 1.5 7 5M1.5 10.5 5 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="p-history" viewBox="-34 0 68 86"><path d="M0,1 C1.23,1 2.73,1.27 3.7,2.1 C4.67,2.93 5.43,4.58 5.8,6 C6.17,7.42 6.15,9.12 5.9,10.6 C5.65,12.08 4.97,13.77 4.3,14.9 C3.63,16.03 2.62,16.92 1.9,17.4 C1.18,17.88 0.63,17.8 0,17.8 C-0.63,17.8 -1.18,17.88 -1.9,17.4 C-2.62,16.92 -3.63,16.03 -4.3,14.9 C-4.97,13.77 -5.65,12.08 -5.9,10.6 C-6.15,9.12 -6.17,7.42 -5.8,6 C-5.43,4.58 -4.67,2.93 -3.7,2.1 C-2.73,1.27 -1.23,1 0,1 Z" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-3,17 C-3.03,17.57 -2.8,19.47 -3.2,20.4 C-3.6,21.33 -4.17,21.97 -5.4,22.6 C-6.63,23.23 -9.03,23.7 -10.6,24.2 C-12.17,24.7 -13.67,24.9 -14.8,25.6 C-15.93,26.3 -16.75,27.1 -17.4,28.4 C-18.05,29.7 -18.4,31.47 -18.7,33.4 C-19,35.33 -19.02,37.57 -19.2,40 C-19.38,42.43 -19.55,45.17 -19.8,48 C-20.05,50.83 -20.42,54.08 -20.7,57 C-20.98,59.92 -21.25,63.07 -21.5,65.5 C-21.75,67.93 -22.15,69.85 -22.2,71.6 C-22.25,73.35 -22.17,75.2 -21.8,76 C-21.43,76.8 -20.48,77.07 -20,76.4 C-19.52,75.73 -19.18,73.82 -18.9,72 C-18.62,70.18 -18.57,68.08 -18.3,65.5 C-18.03,62.92 -17.63,59.58 -17.3,56.5 C-16.97,53.42 -16.65,50.08 -16.3,47 C-15.95,43.92 -15.55,40.43 -15.2,38 C-14.85,35.57 -14.37,33.33 -14.2,32.4" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M3,17 C3.03,17.57 2.8,19.47 3.2,20.4 C3.6,21.33 4.17,21.97 5.4,22.6 C6.63,23.23 9.03,23.7 10.6,24.2 C12.17,24.7 13.67,24.9 14.8,25.6 C15.93,26.3 16.75,27.1 17.4,28.4 C18.05,29.7 18.4,31.47 18.7,33.4 C19,35.33 19.02,37.57 19.2,40 C19.38,42.43 19.55,45.17 19.8,48 C20.05,50.83 20.42,54.08 20.7,57 C20.98,59.92 21.25,63.07 21.5,65.5 C21.75,67.93 22.15,69.85 22.2,71.6 C22.25,73.35 22.17,75.2 21.8,76 C21.43,76.8 20.48,77.07 20,76.4 C19.52,75.73 19.18,73.82 18.9,72 C18.62,70.18 18.57,68.08 18.3,65.5 C18.03,62.92 17.63,59.58 17.3,56.5 C16.97,53.42 16.65,50.08 16.3,47 C15.95,43.92 15.55,40.43 15.2,38 C14.85,35.57 14.37,33.33 14.2,32.4" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-14.2,32.4 C-14.07,33.42 -13.7,36.23 -13.4,38.5 C-13.1,40.77 -12.72,43.5 -12.4,46 C-12.08,48.5 -11.48,50.75 -11.5,53.5 C-11.52,56.25 -12.2,59.75 -12.5,62.5 C-12.8,65.25 -13.17,67.58 -13.3,70 C-13.43,72.42 -13.35,74.58 -13.3,77 C-13.25,79.42 -13.05,83.25 -13,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.2,32.4 C14.07,33.42 13.7,36.23 13.4,38.5 C13.1,40.77 12.72,43.5 12.4,46 C12.08,48.5 11.48,50.75 11.5,53.5 C11.52,56.25 12.2,59.75 12.5,62.5 C12.8,65.25 13.17,67.58 13.3,70 C13.43,72.42 13.35,74.58 13.3,77 C13.25,79.42 13.05,83.25 13,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-1.5,84.5 C-1.44,83.75 -1.33,80.98 -1.1,79.5 C-0.88,78.02 -0.33,74.6 0,74.6 C0.33,74.6 0.88,78.02 1.1,79.5 C1.33,80.98 1.44,83.75 1.5,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-3.91,51.43 L-1.78,52.31 M-5.37,52.89 L-4.49,55.02 M-7.43,52.89 L-8.31,55.02 M-8.89,51.43 L-11.02,52.31 M-8.89,49.37 L-11.02,48.49 M-7.43,47.91 L-8.31,45.78 M-5.37,47.91 L-4.49,45.78 M-3.91,49.37 L-1.78,48.49" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M-5.05,50.4 C-5.05,51.15 -5.65,51.75 -6.4,51.75 C-7.15,51.75 -7.75,51.15 -7.75,50.4 C-7.75,49.65 -7.15,49.05 -6.4,49.05 C-5.65,49.05 -5.05,49.65 -5.05,50.4 Z" fill="#AD4059" stroke="none"/></symbol>
+    <symbol id="p-blood" viewBox="-34 0 68 86"><path d="M0,1 C1.23,1 2.73,1.27 3.7,2.1 C4.67,2.93 5.43,4.58 5.8,6 C6.17,7.42 6.15,9.12 5.9,10.6 C5.65,12.08 4.97,13.77 4.3,14.9 C3.63,16.03 2.62,16.92 1.9,17.4 C1.18,17.88 0.63,17.8 0,17.8 C-0.63,17.8 -1.18,17.88 -1.9,17.4 C-2.62,16.92 -3.63,16.03 -4.3,14.9 C-4.97,13.77 -5.65,12.08 -5.9,10.6 C-6.15,9.12 -6.17,7.42 -5.8,6 C-5.43,4.58 -4.67,2.93 -3.7,2.1 C-2.73,1.27 -1.23,1 0,1 Z" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-3,17 C-3.03,17.57 -2.8,19.47 -3.2,20.4 C-3.6,21.33 -4.17,21.97 -5.4,22.6 C-6.63,23.23 -9.03,23.7 -10.6,24.2 C-12.17,24.7 -13.67,24.9 -14.8,25.6 C-15.93,26.3 -16.75,27.1 -17.4,28.4 C-18.05,29.7 -18.4,31.47 -18.7,33.4 C-19,35.33 -19.02,37.57 -19.2,40 C-19.38,42.43 -19.55,45.17 -19.8,48 C-20.05,50.83 -20.42,54.08 -20.7,57 C-20.98,59.92 -21.25,63.07 -21.5,65.5 C-21.75,67.93 -22.15,69.85 -22.2,71.6 C-22.25,73.35 -22.17,75.2 -21.8,76 C-21.43,76.8 -20.48,77.07 -20,76.4 C-19.52,75.73 -19.18,73.82 -18.9,72 C-18.62,70.18 -18.57,68.08 -18.3,65.5 C-18.03,62.92 -17.63,59.58 -17.3,56.5 C-16.97,53.42 -16.65,50.08 -16.3,47 C-15.95,43.92 -15.55,40.43 -15.2,38 C-14.85,35.57 -14.37,33.33 -14.2,32.4" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M3,17 C3.03,17.57 2.8,19.47 3.2,20.4 C3.6,21.33 4.17,21.97 5.4,22.6 C6.63,23.23 9.03,23.7 10.6,24.2 C12.17,24.7 13.67,24.9 14.8,25.6 C15.93,26.3 16.75,27.1 17.4,28.4 C18.05,29.7 18.4,31.47 18.7,33.4 C19,35.33 19.02,37.57 19.2,40 C19.38,42.43 19.55,45.17 19.8,48 C20.05,50.83 20.42,54.08 20.7,57 C20.98,59.92 21.25,63.07 21.5,65.5 C21.75,67.93 22.15,69.85 22.2,71.6 C22.25,73.35 22.17,75.2 21.8,76 C21.43,76.8 20.48,77.07 20,76.4 C19.52,75.73 19.18,73.82 18.9,72 C18.62,70.18 18.57,68.08 18.3,65.5 C18.03,62.92 17.63,59.58 17.3,56.5 C16.97,53.42 16.65,50.08 16.3,47 C15.95,43.92 15.55,40.43 15.2,38 C14.85,35.57 14.37,33.33 14.2,32.4" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-14.2,32.4 C-14.07,33.42 -13.7,36.23 -13.4,38.5 C-13.1,40.77 -12.72,43.5 -12.4,46 C-12.08,48.5 -11.48,50.75 -11.5,53.5 C-11.52,56.25 -12.2,59.75 -12.5,62.5 C-12.8,65.25 -13.17,67.58 -13.3,70 C-13.43,72.42 -13.35,74.58 -13.3,77 C-13.25,79.42 -13.05,83.25 -13,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.2,32.4 C14.07,33.42 13.7,36.23 13.4,38.5 C13.1,40.77 12.72,43.5 12.4,46 C12.08,48.5 11.48,50.75 11.5,53.5 C11.52,56.25 12.2,59.75 12.5,62.5 C12.8,65.25 13.17,67.58 13.3,70 C13.43,72.42 13.35,74.58 13.3,77 C13.25,79.42 13.05,83.25 13,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-1.5,84.5 C-1.44,83.75 -1.33,80.98 -1.1,79.5 C-0.88,78.02 -0.33,74.6 0,74.6 C0.33,74.6 0.88,78.02 1.1,79.5 C1.33,80.98 1.44,83.75 1.5,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M26.4,50.2 L26.4,56.4 C26.4,57.95 27.65,59.2 29.2,59.2 C30.75,59.2 32,57.95 32,56.4 L32,50.2 Z" fill="#AD4059" stroke="none"/><path d="M26.4,43 L26.4,56.4 C26.4,57.95 27.65,59.2 29.2,59.2 C30.75,59.2 32,57.95 32,56.4 L32,43" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M25.2,43 L33.2,43" fill="none" stroke="#AD4059" stroke-width="1.20" stroke-linecap="round" stroke-linejoin="round"/><path d="M17,47.4 C17.43,46.77 18.5,44.9 19.6,43.6 C20.7,42.3 22.27,40.43 23.6,39.6 C24.93,38.77 26.67,38.47 27.6,38.6 C28.53,38.73 28.93,39.8 29.2,40.4 C29.47,41 29.2,41.9 29.2,42.2" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.95,47.4 C17.95,47.92 17.52,48.35 17,48.35 C16.48,48.35 16.05,47.92 16.05,47.4 C16.05,46.88 16.48,46.45 17,46.45 C17.52,46.45 17.95,46.88 17.95,47.4 Z" fill="#AD4059" stroke="none"/></symbol>
+    <symbol id="p-abdomen" viewBox="-34 0 68 86"><path d="M0,1 C1.23,1 2.73,1.27 3.7,2.1 C4.67,2.93 5.43,4.58 5.8,6 C6.17,7.42 6.15,9.12 5.9,10.6 C5.65,12.08 4.97,13.77 4.3,14.9 C3.63,16.03 2.62,16.92 1.9,17.4 C1.18,17.88 0.63,17.8 0,17.8 C-0.63,17.8 -1.18,17.88 -1.9,17.4 C-2.62,16.92 -3.63,16.03 -4.3,14.9 C-4.97,13.77 -5.65,12.08 -5.9,10.6 C-6.15,9.12 -6.17,7.42 -5.8,6 C-5.43,4.58 -4.67,2.93 -3.7,2.1 C-2.73,1.27 -1.23,1 0,1 Z" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-3,17 C-3.03,17.57 -2.8,19.47 -3.2,20.4 C-3.6,21.33 -4.17,21.97 -5.4,22.6 C-6.63,23.23 -9.03,23.7 -10.6,24.2 C-12.17,24.7 -13.67,24.9 -14.8,25.6 C-15.93,26.3 -16.75,27.1 -17.4,28.4 C-18.05,29.7 -18.4,31.47 -18.7,33.4 C-19,35.33 -19.02,37.57 -19.2,40 C-19.38,42.43 -19.55,45.17 -19.8,48 C-20.05,50.83 -20.42,54.08 -20.7,57 C-20.98,59.92 -21.25,63.07 -21.5,65.5 C-21.75,67.93 -22.15,69.85 -22.2,71.6 C-22.25,73.35 -22.17,75.2 -21.8,76 C-21.43,76.8 -20.48,77.07 -20,76.4 C-19.52,75.73 -19.18,73.82 -18.9,72 C-18.62,70.18 -18.57,68.08 -18.3,65.5 C-18.03,62.92 -17.63,59.58 -17.3,56.5 C-16.97,53.42 -16.65,50.08 -16.3,47 C-15.95,43.92 -15.55,40.43 -15.2,38 C-14.85,35.57 -14.37,33.33 -14.2,32.4" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M3,17 C3.03,17.57 2.8,19.47 3.2,20.4 C3.6,21.33 4.17,21.97 5.4,22.6 C6.63,23.23 9.03,23.7 10.6,24.2 C12.17,24.7 13.67,24.9 14.8,25.6 C15.93,26.3 16.75,27.1 17.4,28.4 C18.05,29.7 18.4,31.47 18.7,33.4 C19,35.33 19.02,37.57 19.2,40 C19.38,42.43 19.55,45.17 19.8,48 C20.05,50.83 20.42,54.08 20.7,57 C20.98,59.92 21.25,63.07 21.5,65.5 C21.75,67.93 22.15,69.85 22.2,71.6 C22.25,73.35 22.17,75.2 21.8,76 C21.43,76.8 20.48,77.07 20,76.4 C19.52,75.73 19.18,73.82 18.9,72 C18.62,70.18 18.57,68.08 18.3,65.5 C18.03,62.92 17.63,59.58 17.3,56.5 C16.97,53.42 16.65,50.08 16.3,47 C15.95,43.92 15.55,40.43 15.2,38 C14.85,35.57 14.37,33.33 14.2,32.4" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-14.2,32.4 C-14.07,33.42 -13.7,36.23 -13.4,38.5 C-13.1,40.77 -12.72,43.5 -12.4,46 C-12.08,48.5 -11.48,50.75 -11.5,53.5 C-11.52,56.25 -12.2,59.75 -12.5,62.5 C-12.8,65.25 -13.17,67.58 -13.3,70 C-13.43,72.42 -13.35,74.58 -13.3,77 C-13.25,79.42 -13.05,83.25 -13,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.2,32.4 C14.07,33.42 13.7,36.23 13.4,38.5 C13.1,40.77 12.72,43.5 12.4,46 C12.08,48.5 11.48,50.75 11.5,53.5 C11.52,56.25 12.2,59.75 12.5,62.5 C12.8,65.25 13.17,67.58 13.3,70 C13.43,72.42 13.35,74.58 13.3,77 C13.25,79.42 13.05,83.25 13,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-1.5,84.5 C-1.44,83.75 -1.33,80.98 -1.1,79.5 C-0.88,78.02 -0.33,74.6 0,74.6 C0.33,74.6 0.88,78.02 1.1,79.5 C1.33,80.98 1.44,83.75 1.5,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-10,47.6 C-9.63,46.73 -9.27,46.17 -8.2,45.8 C-7.13,45.43 -5.2,45.27 -3.6,45.4 C-2,45.53 0.13,46.1 1.4,46.6 C2.67,47.1 3.9,47.77 4,48.4 C4.1,49.03 3.1,49.8 2,50.4 C0.9,51 -1.07,51.17 -2.6,52 C-4.13,52.83 -6.03,54.93 -7.2,55.4 C-8.37,55.87 -9.07,55.53 -9.6,54.8 C-10.13,54.07 -10.33,52.2 -10.4,51 C-10.47,49.8 -10.37,48.47 -10,47.6 Z" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.6,46.2 C8.23,46.47 9.33,47.5 9.6,48.6 C9.87,49.7 9.8,51.6 9.2,52.8 C8.6,54 7.13,55.3 6,55.8 C4.87,56.3 3.07,56.1 2.4,55.8 C1.73,55.5 1.6,54.5 2,54 C2.4,53.5 4.23,53.53 4.8,52.8 C5.37,52.07 5.23,50.57 5.4,49.6 C5.57,48.63 5.43,47.57 5.8,47 C6.17,46.43 6.97,45.93 7.6,46.2 Z" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M-23.4,43.6 L-26,43.6 L-26,57.6 L-23.4,57.6" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M23.4,43.6 L26,43.6 L26,57.6 L23.4,57.6" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="p-chest" viewBox="-34 0 68 86"><path d="M0,1 C1.23,1 2.73,1.27 3.7,2.1 C4.67,2.93 5.43,4.58 5.8,6 C6.17,7.42 6.15,9.12 5.9,10.6 C5.65,12.08 4.97,13.77 4.3,14.9 C3.63,16.03 2.62,16.92 1.9,17.4 C1.18,17.88 0.63,17.8 0,17.8 C-0.63,17.8 -1.18,17.88 -1.9,17.4 C-2.62,16.92 -3.63,16.03 -4.3,14.9 C-4.97,13.77 -5.65,12.08 -5.9,10.6 C-6.15,9.12 -6.17,7.42 -5.8,6 C-5.43,4.58 -4.67,2.93 -3.7,2.1 C-2.73,1.27 -1.23,1 0,1 Z" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-3,17 C-3.03,17.57 -2.8,19.47 -3.2,20.4 C-3.6,21.33 -4.17,21.97 -5.4,22.6 C-6.63,23.23 -9.03,23.7 -10.6,24.2 C-12.17,24.7 -13.67,24.9 -14.8,25.6 C-15.93,26.3 -16.75,27.1 -17.4,28.4 C-18.05,29.7 -18.4,31.47 -18.7,33.4 C-19,35.33 -19.02,37.57 -19.2,40 C-19.38,42.43 -19.55,45.17 -19.8,48 C-20.05,50.83 -20.42,54.08 -20.7,57 C-20.98,59.92 -21.25,63.07 -21.5,65.5 C-21.75,67.93 -22.15,69.85 -22.2,71.6 C-22.25,73.35 -22.17,75.2 -21.8,76 C-21.43,76.8 -20.48,77.07 -20,76.4 C-19.52,75.73 -19.18,73.82 -18.9,72 C-18.62,70.18 -18.57,68.08 -18.3,65.5 C-18.03,62.92 -17.63,59.58 -17.3,56.5 C-16.97,53.42 -16.65,50.08 -16.3,47 C-15.95,43.92 -15.55,40.43 -15.2,38 C-14.85,35.57 -14.37,33.33 -14.2,32.4" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M3,17 C3.03,17.57 2.8,19.47 3.2,20.4 C3.6,21.33 4.17,21.97 5.4,22.6 C6.63,23.23 9.03,23.7 10.6,24.2 C12.17,24.7 13.67,24.9 14.8,25.6 C15.93,26.3 16.75,27.1 17.4,28.4 C18.05,29.7 18.4,31.47 18.7,33.4 C19,35.33 19.02,37.57 19.2,40 C19.38,42.43 19.55,45.17 19.8,48 C20.05,50.83 20.42,54.08 20.7,57 C20.98,59.92 21.25,63.07 21.5,65.5 C21.75,67.93 22.15,69.85 22.2,71.6 C22.25,73.35 22.17,75.2 21.8,76 C21.43,76.8 20.48,77.07 20,76.4 C19.52,75.73 19.18,73.82 18.9,72 C18.62,70.18 18.57,68.08 18.3,65.5 C18.03,62.92 17.63,59.58 17.3,56.5 C16.97,53.42 16.65,50.08 16.3,47 C15.95,43.92 15.55,40.43 15.2,38 C14.85,35.57 14.37,33.33 14.2,32.4" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-14.2,32.4 C-14.07,33.42 -13.7,36.23 -13.4,38.5 C-13.1,40.77 -12.72,43.5 -12.4,46 C-12.08,48.5 -11.48,50.75 -11.5,53.5 C-11.52,56.25 -12.2,59.75 -12.5,62.5 C-12.8,65.25 -13.17,67.58 -13.3,70 C-13.43,72.42 -13.35,74.58 -13.3,77 C-13.25,79.42 -13.05,83.25 -13,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.2,32.4 C14.07,33.42 13.7,36.23 13.4,38.5 C13.1,40.77 12.72,43.5 12.4,46 C12.08,48.5 11.48,50.75 11.5,53.5 C11.52,56.25 12.2,59.75 12.5,62.5 C12.8,65.25 13.17,67.58 13.3,70 C13.43,72.42 13.35,74.58 13.3,77 C13.25,79.42 13.05,83.25 13,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-1.5,84.5 C-1.44,83.75 -1.33,80.98 -1.1,79.5 C-0.88,78.02 -0.33,74.6 0,74.6 C0.33,74.6 0.88,78.02 1.1,79.5 C1.33,80.98 1.44,83.75 1.5,84.5" fill="none" stroke="#AD4059" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/><path d="M-4.4,27.6 C-5.23,27.07 -6.92,28.23 -8,29.2 C-9.08,30.17 -10.28,31.8 -10.9,33.4 C-11.52,35 -11.63,37.07 -11.7,38.8 C-11.77,40.53 -11.95,42.83 -11.3,43.8 C-10.65,44.77 -8.98,44.73 -7.8,44.6 C-6.62,44.47 -4.97,44.03 -4.2,43 C-3.43,41.97 -3.4,40.17 -3.2,38.4 C-3,36.63 -2.8,34.2 -3,32.4 C-3.2,30.6 -3.57,28.13 -4.4,27.6 Z" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.4,27.6 C5.23,27.13 6.92,28.23 8,29.2 C9.08,30.17 10.28,31.8 10.9,33.4 C11.52,35 11.63,37.07 11.7,38.8 C11.77,40.53 11.85,42.83 11.3,43.8 C10.75,44.77 9.18,44.87 8.4,44.6 C7.62,44.33 7.07,43.2 6.6,42.2 C6.13,41.2 6.12,39.67 5.6,38.6 C5.08,37.53 3.93,36.9 3.5,35.8 C3.07,34.7 2.85,33.37 3,32 C3.15,30.63 3.57,28.07 4.4,27.6 Z" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M0,22.2 L0,29 M-2.5,31.9 L0,29 L2.5,31.9" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M-3.3,34.6 C-3.62,34.9 -4.65,35.77 -5.2,36.4 C-5.75,37.03 -6.22,37.8 -6.6,38.4 C-6.98,39 -7.35,39.73 -7.5,40" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M-6.25,40.4 C-6.25,41.2 -6.9,41.85 -7.7,41.85 C-8.5,41.85 -9.15,41.2 -9.15,40.4 C-9.15,39.6 -8.5,38.95 -7.7,38.95 C-6.9,38.95 -6.25,39.6 -6.25,40.4 Z" fill="#AD4059" stroke="none"/><path d="M-23.4,25.4 L-26,25.4 L-26,46.2 L-23.4,46.2" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/><path d="M23.4,25.4 L26,25.4 L26,46.2 L23.4,46.2" fill="none" stroke="#AD4059" stroke-width="0.72" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="#top"><svg aria-hidden="true"><use href="#d2c-mark"/></svg>Decision2Care</a>
+    <nav class="nav-links" aria-label="Sections">
+      <a class="nav-link" href="#why">Why</a>
+      <a class="nav-link" href="#how">How it works</a>
+      <a class="nav-link" href="#results">Results</a>
+      <a class="nav-link" href="#system">System</a>
+      <a class="nav-link" href="#run">Run it</a>
+      <a class="nav-link" href="#authors">Authors</a>
+      <a class="nav-cta" href="#paper">Paper</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<div id="top"></div>
+
+<!-- ================================================================== LANDING -->
+<section class="landing" aria-labelledby="h-title">
+  <div class="landing-bg" aria-hidden="true">
+    <img class="lb1" src="assets/hero/1.webp" width="960" height="422" alt="" decoding="async">
+    <img class="lb2" src="assets/hero/2.webp" width="640" height="490" alt="" decoding="async">
+    <img class="lb3" src="assets/hero/3.webp" width="640" height="378" alt="" decoding="async">
+    <img class="lb4" src="assets/hero/4.webp" width="960" height="499" alt="" decoding="async">
+  </div>
+  <div class="landing-in">
+    <svg class="landing-mark" aria-hidden="true"><use href="#d2c-mark"/></svg>
+    <h1 class="wordmark" id="h-title">Decision<span>2Care</span></h1>
+    <p class="tagline">A clinical decision agent whose <span class="nb">work-up</span> can be reviewed like a clinician's.</p>
+    <div class="btns">
+      <a class="btn btn-primary" href="https://github.com/peterhan91/Decision2Care">Code on GitHub</a>
+      <a class="btn" href="#paper">Paper</a>
+      <a class="btn" href="#demo">Watch a work-up</a>
+    </div>
+  </div>
+  <a class="cue" href="#intro">Scroll ↓</a>
+</section>
+
+<!-- ================================================================== INTRO -->
+<section class="wrap intro" id="intro" aria-labelledby="intro-h">
+  <div>
+    <h2 class="intro-h" id="intro-h">A language-model agent just outputs text. <span>Decision2Care records every decision.</span></h2>
+    <p class="intro-p">Decision2Care is a clinical agent for the patient in the emergency department and intensive care unit that generates no decision as text. At each step a decision model returns a probability for every option, a controller applies a fixed rule, and the step is recorded. A reviewer can see which options were considered and check which result changed the decision.</p>
+    <div class="btns">
+      <a class="btn btn-primary" href="https://github.com/peterhan91/Decision2Care">Code on GitHub</a>
+      <a class="btn" href="#paper">Paper</a>
+      <a class="btn" href="#how">How it works</a>
+    </div>
+  </div>
+  <div class="mock reveal" id="intro-mock">
+    <div class="strip"><span>work-up record</span><span>one of 546 admissions</span></div>
+    <div class="story">
+      <p class="story-case">Right upper abdominal pain shortly after cholecystectomy. Recorded diagnosis: pulmonary embolism.</p>
+      <div class="story-grid"><div class="story-step"><svg viewBox="0 0 68 86" aria-hidden="true"><use href="#p-history"/></svg><b>History</b></div><div class="story-step"><svg viewBox="0 0 68 86" aria-hidden="true"><use href="#p-blood"/></svg><b>Blood tests</b></div><div class="story-step"><svg viewBox="0 0 68 86" aria-hidden="true"><use href="#p-abdomen"/></svg><b>Abdominal CT</b></div><div class="story-step"><svg viewBox="0 0 68 86" aria-hidden="true"><use href="#p-chest"/></svg><b>Chest CT</b></div></div>
+      <p class="story-legend"><span class="t">Probability in the differential</span><span><i></i>Pulmonary embolism</span><span><i class="b"></i>Cholecystitis</span></p>
+      <svg class="story-chart" role="img" aria-label="Probability in the differential diagnosis at the four steps. History: pulmonary embolism 0.05, cholecystitis 0.89, Blood tests: pulmonary embolism 0.37, cholecystitis 0.47, Abdominal CT: pulmonary embolism 0.45, cholecystitis 0.35, Chest CT: pulmonary embolism 0.96, cholecystitis 0.04.">
+        <line class="grid" x1="0" x2="100%" y1="114" y2="114"/><text class="tick" x="2" y="110">0</text>
+        <line class="grid" x1="0" x2="100%" y1="69.0" y2="69.0"/><text class="tick" x="2" y="65.0">0.5</text>
+        <line class="grid" x1="0" x2="100%" y1="24" y2="24"/><text class="tick" x="2" y="20">1</text>
+        <line class="seg b t2" pathLength="1" x1="12.5%" y1="33.9" x2="37.5%" y2="71.7"/>
+        <line class="seg b t3" pathLength="1" x1="37.5%" y1="71.7" x2="62.5%" y2="82.5"/>
+        <line class="seg b t4" pathLength="1" x1="62.5%" y1="82.5" x2="87.5%" y2="110.4"/>
+        <line class="seg a t2" pathLength="1" x1="12.5%" y1="109.5" x2="37.5%" y2="80.7"/>
+        <line class="seg a t3" pathLength="1" x1="37.5%" y1="80.7" x2="62.5%" y2="73.5"/>
+        <line class="seg a t4" pathLength="1" x1="62.5%" y1="73.5" x2="87.5%" y2="27.6"/>
+        <circle class="dot b t1" cx="12.5%" cy="33.9" r="4.5"/>
+        <circle class="dot a t1" cx="12.5%" cy="109.5" r="5"/>
+        <circle class="dot b t2" cx="37.5%" cy="71.7" r="4.5"/>
+        <circle class="dot a t2" cx="37.5%" cy="80.7" r="5"/>
+        <circle class="dot b t3" cx="62.5%" cy="82.5" r="4.5"/>
+        <circle class="dot a t3" cx="62.5%" cy="73.5" r="5"/>
+        <circle class="dot b t4" cx="87.5%" cy="110.4" r="4.5"/>
+        <circle class="dot a t4" cx="87.5%" cy="27.6" r="5"/>
+        <text class="lab t1" x="12.5%" y="99.5" text-anchor="middle">0.05</text>
+        <text class="lab t2" x="37.5%" y="99.7" text-anchor="middle">0.37</text>
+        <text class="lab t3" x="62.5%" y="63.5" text-anchor="middle">0.45</text>
+        <text class="lab t4" x="87.5%" y="17.6" text-anchor="middle">0.96</text>
+        <text class="lab q t1" x="12.5%" y="24.9" text-anchor="middle">0.89</text>
+        <text class="lab q t4" x="87.5%" y="101.4" text-anchor="middle">0.04</text>
+        <rect class="hit" x="0.0%" y="0" width="25%" height="136" rx="6" tabindex="0" data-tip="History
+0.05|pulmonary embolism
+0.89|cholecystitis"/>
+        <rect class="hit" x="25.0%" y="0" width="25%" height="136" rx="6" tabindex="0" data-tip="Blood tests
+0.37|pulmonary embolism
+0.47|cholecystitis"/>
+        <rect class="hit" x="50.0%" y="0" width="25%" height="136" rx="6" tabindex="0" data-tip="Abdominal CT
+0.45|pulmonary embolism
+0.35|cholecystitis"/>
+        <rect class="hit" x="75.0%" y="0" width="25%" height="136" rx="6" tabindex="0" data-tip="Chest CT
+0.96|pulmonary embolism
+0.04|cholecystitis"/>
+      </svg>
+    </div>
+    <div class="mock-sec">
+      <p class="mock-k">Choice asked after the abdominal CT</p>
+      <p class="mock-q">Which action next?</p>
+      <div class="opts" role="img" aria-label="Imaging 0.58, executed. Final diagnosis 0.23. Laboratory tests 0.19.">
+        <div class="opt is-c"><span class="ol">Imaging<small>executed</small></span><span class="track"><i style="--v:0.58"></i></span><span class="ov">0.58</span></div>
+        <div class="opt"><span class="ol">Final diagnosis</span><span class="track"><i style="--v:0.23"></i></span><span class="ov">0.23</span></div>
+        <div class="opt"><span class="ol">Laboratory tests</span><span class="track"><i style="--v:0.19"></i></span><span class="ov">0.19</span></div>
+      </div>
+    </div>
+    <div class="mock-foot"><span>Final diagnosis</span><span class="code-chip">I26.94</span><span class="ok-chip">matches the recorded diagnosis</span></div>
+  </div>
+</section>
+
+<!-- ================================================================== DEMO -->
+<section class="wrap demo" id="demo" aria-labelledby="demo-h">
+  <h2 class="sec-h" id="demo-h">Follow a work-up, one decision at a time.</h2>
+  <p class="sec-lead">Each of these 3 work-ups began with an incorrect top-ranked disease at a probability of 0.50 or more and changed to the correct disease at a guideline test. The agent arrived at the correct diagnosis in all 5 runs for each of them.</p>
+  <div class="mock player" id="rp">
+    <div class="strip"><span>decision2care · recorded work-up</span><div class="seg-tabs" role="tablist" aria-label="Recorded work-ups" id="rp-tabs"></div></div>
+    <div id="rp-panel" role="tabpanel" tabindex="-1">
+      <p class="rp-blurb" id="rp-blurb"></p>
+      <div class="rp-main">
+        <div class="rp-list" id="rp-list" aria-label="Steps of the work-up"></div>
+        <div class="rp-detail" id="rp-detail" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="player-ctrl">
+      <button class="pc-btn pc-play" type="button" id="rp-play" aria-label="Play the work-up"><svg aria-hidden="true"><use href="#i-play"/></svg></button>
+      <button class="pc-btn" type="button" id="rp-prev" aria-label="Previous step"><svg aria-hidden="true"><use href="#i-prev"/></svg></button>
+      <button class="pc-btn" type="button" id="rp-next" aria-label="Next step"><svg aria-hidden="true"><use href="#i-next"/></svg></button>
+      <div class="pc-track" id="rp-track" aria-hidden="true"></div>
+      <span class="pc-count" id="rp-count"></span>
+    </div>
+  </div>
+  <p class="note" style="margin-top:14px">Probabilities are from the baseline run. The differential and the coded diagnosis were queried separately after every action and did not change the course of the work-up. Findings are condensed, and they are shown for the steps that the paper's figure highlights.</p>
+
+  <div class="stats" aria-label="Headline results">
+    <div class="stat"><b>546 admissions</b><span>emergency admissions spanning 12 diseases, each worked up 5 times</span></div>
+    <div class="stat"><b>86.5% accuracy</b><span>in diagnosis, within the range of an LLM agent run with 3 language models, 86.1 to 91.7%</span></div>
+    <div class="stat"><b>2.2 s per work-up</b><span>at the median, against 92 to 100 s for one run of the LLM agent</span></div>
+    <div class="stat"><b>4 of 4 errors traced</b><span>each confident but wrong diagnosis led back to one imaging report</span></div>
+  </div>
+</section>
+
+<!-- ================================================================== WHY -->
+<section class="wrap sec" id="why" aria-labelledby="why-h">
+  <h2 class="sec-h" id="why-h">If agents are to order tests, their work-ups must be auditable.</h2>
+  <p class="sec-lead">At morbidity and mortality conferences, clinicians review missed diagnoses by asking what was known at each step and why a test was or was not done. Current LLM agents produce their reasoning and tool calls as text. The transcript shows what the agent did, but its explanation may omit the findings that led to a particular decision.</p>
+  <div class="cards3">
+    <article class="card tcard">
+      <p class="eyebrow">Options</p>
+      <h3>Which options were considered?</h3>
+      <p>Decision2Care records the probabilities of all the options at each step, so a reviewer can see which options were considered.</p>
+    </article>
+    <article class="card tcard">
+      <p class="eyebrow">Evidence</p>
+      <h3>Which result changed the assessment?</h3>
+      <p>The work-up takes a few seconds, so we can remove or replace a result, re-run the work-up and check which result changed the decision.</p>
+    </article>
+    <article class="card tcard">
+      <p class="eyebrow">Confidence</p>
+      <h3>How sure was the agent?</h3>
+      <p>In MIRA-v2, the best-performing confidence measure requires 5 work-ups of the same case. Decision2Care reads its confidence as one probability after a single work-up.</p>
+    </article>
+  </div>
+  <div class="tbl-wrap cmp">
+    <table>
+      <caption>The two kinds of agent on the same 546 admissions</caption>
+      <thead><tr><th scope="col"><span class="sr">Property</span></th><th scope="col">LLM agent, MIRA-v2 with 3 models</th><th scope="col" class="is-d2c">Decision agent, Decision2Care</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">What a step produces</th><td>Reasoning and tool calls as text</td><td class="is-d2c">A probability for every named option</td></tr>
+        <tr><th scope="row">What is left to review</th><td>A transcript, whose explanation may omit the findings that led to a decision</td><td class="is-d2c">Each question, the clinical state, the probabilities and the rule applied</td></tr>
+        <tr><th scope="row">Confidence in a diagnosis</th><td>Agreement among 5 repeated work-ups</td><td class="is-d2c">One probability after a single work-up</td></tr>
+        <tr><th scope="row">Diagnostic accuracy</th><td class="num">86.1 to 91.7%</td><td class="is-d2c num">86.5%</td></tr>
+        <tr><th scope="row">Median time per work-up</th><td class="num">92 to 100 s</td><td class="is-d2c num">2.2 s</td></tr>
+        <tr><th scope="row">Cost of 546 work-ups at list prices</th><td class="num">US$20.5 to 79.7</td><td class="is-d2c num">US$1.31</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================================================================== HOW -->
+<section class="wrap sec" id="how" aria-labelledby="how-h">
+  <h2 class="sec-h" id="how-h">A work-up as a sequence of typed decisions.</h2>
+  <p class="sec-lead">Decision2Care divides a clinical work-up between a decision model and a deterministic controller. The decision model reads the current clinical state and answers typed questions with probabilities rather than text. The controller turns them into actions using fixed rules.</p>
+  <div class="rows">
+    <div class="row">
+      <div class="row-text">
+        <p class="eyebrow">Step 1 of 3</p>
+        <h3>Ask a typed question.</h3>
+        <p>Each step is framed as a question with permitted options, such as the tests that can be ordered or the codes from which the final diagnosis is selected. A Choice asks for a probability for each of a set of named options. A Noul is a yes/no question and asks for the probability that a statement is true.</p>
+        <p>The decision model scores only the options it is presented with. Its menus therefore cannot contain a hallucinated test, and they are in plain text, so the same model can score new questions without retraining.</p>
+      </div>
+      <div class="mock">
+        <div class="strip"><span>typed questions</span><span>2 kinds</span></div>
+        <div class="mock-sec">
+          <p class="mock-k">Choice · a probability for each named option</p>
+          <p class="mock-q">Which action next?</p>
+      <div class="opts" role="img" aria-label="Imaging 0.58, executed. Final diagnosis 0.23. Laboratory tests 0.19.">
+        <div class="opt is-c"><span class="ol">Imaging<small>executed</small></span><span class="track"><i style="--v:0.58"></i></span><span class="ov">0.58</span></div>
+        <div class="opt"><span class="ol">Final diagnosis</span><span class="track"><i style="--v:0.23"></i></span><span class="ov">0.23</span></div>
+        <div class="opt"><span class="ol">Laboratory tests</span><span class="track"><i style="--v:0.19"></i></span><span class="ov">0.19</span></div>
+      </div>
+          <p class="rule"><b>Rule.</b> The controller executes the most probable option.</p>
+        </div>
+        <div class="mock-sec">
+          <p class="mock-k">Noul · the probability that a statement is true</p>
+          <p class="mock-q">Is this treatment category indicated now?</p>
+          <div class="opts thr" role="img" aria-label="Antibiotics 0.94, analgesia 0.92, intravenous fluids 0.73, antiemetics 0.71. All reach the threshold of 0.50.">
+            <div class="opt is-c"><span class="ol">Antibiotics<small>selected</small></span><span class="track"><i style="--v:.94"></i></span><span class="ov">0.94</span></div>
+            <div class="opt is-c"><span class="ol">Analgesia<small>selected</small></span><span class="track"><i style="--v:.92"></i></span><span class="ov">0.92</span></div>
+            <div class="opt is-c"><span class="ol">IV fluids<small>selected</small></span><span class="track"><i style="--v:.73"></i></span><span class="ov">0.73</span></div>
+            <div class="opt is-c"><span class="ol">Antiemetics<small>selected</small></span><span class="track"><i style="--v:.71"></i></span><span class="ov">0.71</span></div>
+          </div>
+          <p class="thr-key"><i></i>threshold at 0.50. Asked for 42 categories in one appendicitis admission, and the 4 shown were selected.</p>
+          <p class="rule"><b>Rule.</b> The controller endorses the statement when its probability reaches 0.50.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row row-flip">
+      <div class="row-text">
+        <p class="eyebrow">Step 2 of 3</p>
+        <h3>Score every option, then act by a fixed rule.</h3>
+        <p>In each round, the decision model reads the current clinical state, which holds the history and the findings retrieved so far. It is given a Choice over the remaining actions, and the controller executes the most probable one, either a tool or the final diagnosis.</p>
+        <p>Each tool asks further questions to decide what to retrieve, then adds the recorded findings to the clinical state. The tools are services that a hospital already defines: physical examination, vital signs, laboratory tests, imaging and the home medication list. The final diagnosis ends the rounds and is coded by Choices that descend the ICD-10-CM tree from chapter to billable code.</p>
+      </div>
+      <figure class="fig" data-group="overview">
+        <button class="fig-stage" type="button" data-panel="loop"><img src="assets/panels/overview-loop.webp" width="1700" height="1004" loading="lazy" decoding="async" alt="Diagram of the work-up loop. The clinical state feeds a Choice over the next action. A selected tool returns findings that update the state, and the final diagnosis ends the loop. Bars show the differential diagnosis after the abdominal CT and after the chest CT."><span class="fig-zoom"><svg aria-hidden="true"><use href="#i-zoom"/></svg>Enlarge</span></button>
+        <figcaption class="fig-cap">The work-up loop. After every action the differential diagnosis is queried again, shown here after the abdominal CT and after the chest CT of one patient.</figcaption>
+      </figure>
+    </div>
+
+    <div class="row">
+      <div class="row-text">
+        <p class="eyebrow">Step 3 of 3</p>
+        <h3>Record every decision.</h3>
+        <p>Decision2Care logs each question, the clinical state used to answer it, the probabilities returned, and the rule applied. A reviewer can then go through the work-up as a sequence of typed decisions and re-ask any question using the state that was recorded at that point.</p>
+        <p>The decision model answered a mean of 233 typed questions in 14 requests per case.</p>
+      </div>
+      <div class="mock">
+        <div class="strip"><span>audit record</span><span>decision 5 of 6</span></div>
+        <dl class="rec">
+          <div><dt>question</dt><dd>Which action next? <span class="code-chip">Choice</span></dd></div>
+          <div><dt>clinical state</dt><dd>The history and what 4 earlier steps returned, ending with the abdominal CT</dd></div>
+          <div><dt>probabilities</dt><dd><span class="seg" aria-hidden="true"><i class="c" style="flex:58"></i><i style="flex:23"></i><i style="flex:19"></i></span>Imaging 0.58, final diagnosis 0.23, laboratory tests 0.19</dd></div>
+          <div><dt>rule</dt><dd>Execute the most probable option</dd></div>
+          <div><dt>executed</dt><dd>Imaging. The imaging tool then selected a chest CT.</dd></div>
+          <div><dt>returned</dt><dd>Pulmonary arterial filling defects in the RLL and segmental arteries. No right ventricular strain.</dd></div>
+          <div><dt>also recorded</dt><dd>Noul: do the documented findings suffice to name the principal diagnosis? 0.12</dd></div>
+        </dl>
+        <div class="mock-foot">Any row can be asked again from its saved state.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== RESULTS -->
+<section class="wrap sec" id="results" aria-labelledby="results-h">
+  <h2 class="sec-h" id="results-h">A decision agent can perform a clinical work-up without generating text.</h2>
+  <p class="sec-lead">We ran Decision2Care on 546 emergency admissions to Beth Israel Deaconess Medical Center spanning 12 diseases, taken from MIMIC-IV, and compared it with MIRA-v2, an LLM agent run with GPT-OSS-120B, GLM-5 and Claude Sonnet 5. The same architecture was then used to select treatment and to estimate mortality risk.</p>
+
+  <div class="rows">
+    <!-- 1 diagnosis -->
+    <article class="row" id="results-diagnosis">
+      <div class="row-text">
+        <p class="eyebrow">Diagnosis · 546 admissions, 12 diseases</p>
+        <h3>Accuracy within the range of LLM agents, in 2.2 seconds per work-up.</h3>
+        <p>Mean diagnostic accuracy was 86.5% for Decision2Care (95% CI 83.6 to 89.2%), within the range of MIRA-v2 with the 3 LLMs (86.1%, 89.9% and 91.7%). More than half of the difference from the 2 stronger configurations came from a single disease, cholecystitis.</p>
+        <p>A Decision2Care work-up was more than 40 times faster than 1 run of MIRA-v2, at a cost 16 to 61 times lower. Similar accuracies were obtained when 2 other decision models drove the same controller, tools and typed questions in place of Jev, 85.9% with PPLX decider v1.2 and 87.2% with Qwen3.8-Flash-Next.</p>
+      </div>
+      <div class="card">
+        <div class="chart">
+          <p class="c-title">Median time per work-up</p>
+          <p class="c-sub">Seconds, 546 admissions</p>
+          <ul class="bars" style="--pad:62px">
+            <li class="bar is-d2c" tabindex="0" data-tip="Decision2Care
+2.2 s|median per work-up
+1.7–2.7 s|interquartile range"><span class="bl">Decision2Care</span><span class="track"><i class="fill" style="--f:0.0220"></i><b class="val" style="--f:0.0220">2.2 s</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, GPT-OSS-120B
+92.7 s|median per work-up
+74.3–116.6 s|interquartile range"><span class="bl">MIRA-v2, GPT-OSS-120B</span><span class="track"><i class="fill" style="--f:0.9261"></i><b class="val" style="--f:0.9261">92.7 s</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, GLM-5
+92.4 s|median per work-up
+75.5–121.8 s|interquartile range"><span class="bl">MIRA-v2, GLM-5</span><span class="track"><i class="fill" style="--f:0.9231"></i><b class="val" style="--f:0.9231">92.4 s</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, Claude Sonnet 5
+100.1 s|median per work-up
+87.5–119.1 s|interquartile range"><span class="bl">MIRA-v2, Claude Sonnet 5</span><span class="track"><i class="fill" style="--f:1.0000"></i><b class="val" style="--f:1.0000">100.1 s</b></span></li>
+          </ul>
+        </div>
+        <div class="chart">
+          <p class="c-title">Cost of working up all 546 admissions once</p>
+          <p class="c-sub">US$ at list prices</p>
+          <ul class="bars" style="--pad:76px">
+            <li class="bar is-d2c" tabindex="0" data-tip="Decision2Care
+US$1.31|546 admissions, 1 work-up each
+US$0.0024|per case
+1 work-up|is enough for its confidence reading"><span class="bl">Decision2Care</span><span class="track"><i class="fill" style="--f:0.0164"></i><b class="val" style="--f:0.0164">US$1.31</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, GPT-OSS-120B
+US$20.5|546 admissions, 1 work-up each
+US$0.0376|per case
+US$102.6|the 5 work-ups its confidence signal requires"><span class="bl">MIRA-v2, GPT-OSS-120B</span><span class="track"><i class="fill" style="--f:0.2572"></i><b class="val" style="--f:0.2572">US$20.5</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, GLM-5
+US$69.1|546 admissions, 1 work-up each
+US$0.1266|per case
+US$345.5|the 5 work-ups its confidence signal requires"><span class="bl">MIRA-v2, GLM-5</span><span class="track"><i class="fill" style="--f:0.8670"></i><b class="val" style="--f:0.8670">US$69.1</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, Claude Sonnet 5
+US$79.7|546 admissions, 1 work-up each
+US$0.1460|per case
+US$398.5|the 5 work-ups its confidence signal requires"><span class="bl">MIRA-v2, Claude Sonnet 5</span><span class="track"><i class="fill" style="--f:1.0000"></i><b class="val" style="--f:1.0000">US$79.7</b></span></li>
+          </ul>
+        </div>
+      </div>
+    </article>
+    <div class="below">
+      <div class="card">
+        <p class="c-title">Diagnostic accuracy by disease</p>
+        <p class="c-sub">Percent of admissions diagnosed correctly, mean of 5 runs. The teal line spans Decision2Care's lowest and highest run.</p>
+        <div class="legend" aria-hidden="true">
+          <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#00918A"/></svg>Decision2Care</span>
+          <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="4.2" fill="#fff" stroke="#59616A" stroke-width="1.5"/></svg>MIRA-v2, GPT-OSS-120B</span>
+          <span><svg viewBox="0 0 14 14"><rect x="3" y="3" width="8" height="8" fill="#fff" stroke="#59616A" stroke-width="1.5"/></svg>MIRA-v2, GLM-5</span>
+          <span><svg viewBox="0 0 14 14"><path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" fill="#fff" stroke="#59616A" stroke-width="1.5"/></svg>MIRA-v2, Claude Sonnet 5</span>
+        </div>
+        <div class="dotplot" id="dotplot" role="img" aria-label="Dot plot of diagnostic accuracy by disease for Decision2Care and MIRA-v2 with three language models. The same values are in the table below the chart."></div>
+        <div class="chart-foot">
+          <p class="c-note">Decision2Care was numerically higher than all 3 comparators in appendicitis, pulmonary embolism, subarachnoid haemorrhage and meningitis. In the 11 diseases other than cholecystitis, its accuracy did not differ from any comparator after correction for multiple comparisons.</p>
+          <button class="btn btn-sm" type="button" id="tv-btn" aria-expanded="false" aria-controls="tv">Show as table</button>
+        </div>
+        <div class="tv tbl-wrap" id="tv" hidden>
+          <table>
+            <caption>Diagnostic accuracy, %. Mean of 5 runs, with the minimum and maximum in parentheses.</caption>
+            <thead><tr><th scope="col">Disease</th><th scope="col" class="n">n</th><th scope="col" class="n is-d2c">Decision2Care</th><th scope="col" class="n">MIRA-v2, GPT-OSS-120B</th><th scope="col" class="n">MIRA-v2, GLM-5</th><th scope="col" class="n">MIRA-v2, Claude Sonnet 5</th></tr></thead>
+            <tbody>
+            <tr><th scope="row">Appendicitis</th><td class="n">148</td><td class="n is-d2c">99.9 (99.3–100.0)</td><td class="n">98.6 (98.0–99.3)</td><td class="n">98.5 (98.0–98.6)</td><td class="n">99.2 (98.6–99.3)</td></tr>
+            <tr><th scope="row">Cholecystitis</th><td class="n">129</td><td class="n is-d2c">77.7 (77.5–78.3)</td><td class="n">81.2 (79.8–82.9)</td><td class="n">85.7 (84.5–86.8)</td><td class="n">91.0 (88.4–93.0)</td></tr>
+            <tr><th scope="row">Diverticulitis</th><td class="n">54</td><td class="n is-d2c">88.1 (85.2–90.7)</td><td class="n">90.7 (88.9–92.6)</td><td class="n">93.7 (92.6–94.4)</td><td class="n">95.6 (94.4–96.3)</td></tr>
+            <tr><th scope="row">Pancreatitis</th><td class="n">52</td><td class="n is-d2c">91.5 (88.5–92.3)</td><td class="n">94.2 (90.4–98.1)</td><td class="n">98.5 (98.1–100.0)</td><td class="n">98.1 (96.2–100.0)</td></tr>
+            <tr><th scope="row">Pneumonia</th><td class="n">21</td><td class="n is-d2c">45.7 (42.9–47.6)</td><td class="n">37.1 (33.3–42.9)</td><td class="n">52.4 (47.6–61.9)</td><td class="n">53.3 (52.4–57.1)</td></tr>
+            <tr><th scope="row">Pulmonary embolism</th><td class="n">15</td><td class="n is-d2c">92.0 (86.7–93.3)</td><td class="n">70.7 (60.0–80.0)</td><td class="n">88.0 (80.0–93.3)</td><td class="n">84.0 (80.0–93.3)</td></tr>
+            <tr><th scope="row">Urinary tract infection</th><td class="n">18</td><td class="n is-d2c">82.2 (77.8–83.3)</td><td class="n">60.0 (50.0–72.2)</td><td class="n">78.9 (72.2–83.3)</td><td class="n">82.2 (72.2–94.4)</td></tr>
+            <tr><th scope="row">Bowel obstruction</th><td class="n">67</td><td class="n is-d2c">91.6 (91.0–92.5)</td><td class="n">90.4 (88.1–94.0)</td><td class="n">94.9 (92.5–97.0)</td><td class="n">94.3 (92.5–97.0)</td></tr>
+            <tr><th scope="row">Heart failure</th><td class="n">13</td><td class="n is-d2c">64.6 (61.5–69.2)</td><td class="n">81.5 (76.9–84.6)</td><td class="n">78.5 (69.2–84.6)</td><td class="n">81.5 (76.9–84.6)</td></tr>
+            <tr><th scope="row">Subarachnoid haemorrhage</th><td class="n">7</td><td class="n is-d2c">42.9 (42.9–42.9)</td><td class="n">22.9 (14.3–42.9)</td><td class="n">34.3 (28.6–42.9)</td><td class="n">40.0 (28.6–42.9)</td></tr>
+            <tr><th scope="row">Myocardial infarction</th><td class="n">13</td><td class="n is-d2c">69.2 (69.2–69.2)</td><td class="n">86.2 (84.6–92.3)</td><td class="n">83.1 (76.9–92.3)</td><td class="n">86.2 (84.6–92.3)</td></tr>
+            <tr><th scope="row">Meningitis</th><td class="n">9</td><td class="n is-d2c">100.0 (100.0–100.0)</td><td class="n">88.9 (77.8–100.0)</td><td class="n">80.0 (66.7–88.9)</td><td class="n">82.2 (66.7–100.0)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 differential -->
+    <article class="row row-flip" id="results-differential">
+      <div class="row-text">
+        <p class="eyebrow">Differential · after every action</p>
+        <h3>The record shows which result changed the diagnosis.</h3>
+        <p>Across the 546 admissions the true disease was top of the differential in 71.4% of case-runs on the history alone and 93.3% after the work-up. In 10 of the 12 diseases, the largest mean increase in its probability followed a test the guideline uses to make the diagnosis.</p>
+        <p>In the patient with pain after cholecystectomy, the probability of pulmonary embolism in the differential diagnosis was 0.45 after abdominal CT and 0.96 after chest CT.</p>
+      </div>
+      <figure class="fig" data-group="differential">
+        <button class="fig-stage" type="button" data-panel="b-focus"><img src="assets/panels/differential-b-focus.webp" width="1560" height="1434" loading="lazy" decoding="async" alt="Stacked areas of the differential diagnosis during one work-up. Cholecystitis leads on the history. Pulmonary embolism rises from 5% to 37% after blood tests, 45% after the abdominal CT and 96% after the chest CT. Four cards give the findings at those steps."><span class="fig-zoom"><svg aria-hidden="true"><use href="#i-zoom"/></svg>Enlarge</span></button>
+        <figcaption class="fig-cap">One work-up of the baseline run. The stacked areas show the probability of each disease and of none of the tested diseases (grey) on the history alone (H) and after each step. The true disease is shown in teal.</figcaption>
+      </figure>
+    </article>
+    <div class="below">
+      <div class="grid2">
+        <div class="card">
+          <p class="c-title">What moved the differential</p>
+          <p class="c-sub">Mean increase in the probability of the true disease after a step, with 95% CI</p>
+          <ul class="bars" style="--pad:52px">
+            <li class="bar is-accent" tabindex="0" data-tip="CT report
++0.21|mean increase in the probability of the true disease
+0.17–0.25|95% CI"><span class="bl">CT report</span><span class="track"><i class="fill" style="--f:0.7000"></i><i class="ci" style="--lo:0.5667;--hi:0.8333"></i><b class="val" style="--f:0.8333">+0.21</b></span></li>
+            <li class="bar is-accent" tabindex="0" data-tip="Ultrasound report
++0.11|mean increase in the probability of the true disease
+0.07–0.15|95% CI"><span class="bl">Ultrasound report</span><span class="track"><i class="fill" style="--f:0.3667"></i><i class="ci" style="--lo:0.2333;--hi:0.5000"></i><b class="val" style="--f:0.5000">+0.11</b></span></li>
+            <li class="bar is-accent" tabindex="0" data-tip="Laboratory order
++0.05|mean increase in the probability of the true disease
+0.03–0.07|95% CI"><span class="bl">Laboratory order</span><span class="track"><i class="fill" style="--f:0.1667"></i><i class="ci" style="--lo:0.1000;--hi:0.2333"></i><b class="val" style="--f:0.2333">+0.05</b></span></li>
+            <li class="bar is-accent" tabindex="0" data-tip="Physical examination
++0.04|mean increase in the probability of the true disease
+0.02–0.05|95% CI"><span class="bl">Physical examination</span><span class="track"><i class="fill" style="--f:0.1333"></i><i class="ci" style="--lo:0.0667;--hi:0.1667"></i><b class="val" style="--f:0.1667">+0.04</b></span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <p class="c-title">What the diagnosis depended on</p>
+          <p class="c-sub">Change in accuracy, in points, when one source is left out of the final chart</p>
+          <ul class="bars" style="--pad:118px">
+            <li class="bar is-d2c" tabindex="0" data-tip="CT reports withheld
+−24.4 points|change in accuracy among 303 cases
+p &lt; 0.001|exact McNemar test"><span class="bl">CT reports<small>303 cases</small></span><span class="track"><i class="fill" style="--f:0.8133"></i><b class="val" style="--f:0.8133">−24.4<small>p &lt; 0.001</small></b></span></li>
+            <li class="bar is-d2c" tabindex="0" data-tip="Ultrasound reports withheld
+−16.4 points|change in accuracy among 146 cases
+p &lt; 0.001|exact McNemar test"><span class="bl">Ultrasound reports<small>146 cases</small></span><span class="track"><i class="fill" style="--f:0.5467"></i><b class="val" style="--f:0.5467">−16.4<small>p &lt; 0.001</small></b></span></li>
+            <li class="bar is-d2c" tabindex="0" data-tip="Lipase and amylase withheld
+−9.9 points|change in accuracy among 152 cases
+p = 0.004|exact McNemar test"><span class="bl">Lipase and amylase<small>152 cases</small></span><span class="track"><i class="fill" style="--f:0.3300"></i><b class="val" style="--f:0.3300">−9.9<small>p = 0.004</small></b></span></li>
+            <li class="bar " tabindex="0" data-tip="Blood count withheld
+−1.3 points|change in accuracy among 314 cases
+p = 0.34|exact McNemar test"><span class="bl">Blood count<small>314 cases</small></span><span class="track"><i class="fill" style="--f:0.0433"></i><b class="val" style="--f:0.0433">−1.3</b></span></li>
+            <li class="bar " tabindex="0" data-tip="Physical examination withheld
+−1.0 points|change in accuracy among 526 cases
+p = 0.18|exact McNemar test"><span class="bl">Physical examination<small>526 cases</small></span><span class="track"><i class="fill" style="--f:0.0333"></i><b class="val" style="--f:0.0333">−1.0</b></span></li>
+            <li class="bar " tabindex="0" data-tip="Electrolytes, renal, glucose withheld
++0.3 points|change in accuracy among 313 cases
+p = 1.00|exact McNemar test"><span class="bl">Electrolytes, renal, glucose<small>313 cases</small></span><span class="track"><b class="val" style="--f:0.0000">+0.3</b></span></li>
+            <li class="bar " tabindex="0" data-tip="Vital signs withheld
+0.0 points|change in accuracy among 71 cases
+p = 1.00|exact McNemar test"><span class="bl">Vital signs<small>71 cases</small></span><span class="track"><b class="val" style="--f:0.0000">0.0</b></span></li>
+          </ul>
+          <p class="c-note">Teal marks a change with p &lt; 0.01 in an exact McNemar test. Each row counts the cases that contain the source.</p>
+        </div>
+      </div>
+      <p class="below-p">In pancreatitis, removing lipase and amylase from the 37 cases that had them lowered accuracy by 54.1 points, whereas removing any other source left it unchanged. The stepwise differential thus showed which diagnoses the agent considered and how each result changed its assessment, while withholding evidence tested whether the final diagnosis depended on it.</p>
+    </div>
+
+    <!-- 3 deferral -->
+    <article class="row" id="results-deferral">
+      <div class="row-text">
+        <p class="eyebrow">Deferral · one work-up</p>
+        <h3>One confidence reading separated correct from incorrect diagnoses about as well as 5 repeated work-ups.</h3>
+        <p>We asked whether the agent could tell, from a single work-up, which of its diagnoses to act on and which to hand to a clinician. MIRA-v2 answers this question with the agreement of 5 repeated work-ups. Decision2Care's signal is its confidence in its diagnosis, one probability queried after a single work-up (AUROC 0.831, compared with 0.827, 0.830 and 0.870).</p>
+        <p>Decision2Care retained 269 of 546 admissions and correctly diagnosed 265 of those (98.5%). Of the 71 incorrect diagnoses, 67 were in cases flagged for review.</p>
+      </div>
+      <div class="card">
+        <p class="c-title">546 admissions, sorted by one confidence reading</p>
+        <p class="c-sub">Baseline run, with the threshold set to retain about half the cases</p>
+          <div class="units-wrap">
+            <div><p class="units-h">Retained by the agent: 269<small>265 correct, 4 incorrect</small></p><div class="units " role="img" aria-label="265 correct and 4 incorrect diagnoses"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w hl"></i><i class="w hl"></i><i class="w hl"></i><i class="w hl"></i></div></div>
+            <div><p class="units-h">Flagged for clinician review: 277<small>210 correct, 67 incorrect</small></p><div class="units is-flag" role="img" aria-label="210 correct and 67 incorrect diagnoses"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i><i class="w"></i></div></div>
+          </div>
+          <div class="legend" aria-hidden="true"><span><svg viewBox="0 0 14 14"><rect x="2" y="2" width="10" height="10" rx="2" fill="#00918A"/></svg>correct diagnosis</span><span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#AD4059"/></svg>incorrect diagnosis</span><span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="4" fill="#AD4059" stroke="#202327" stroke-width="2"/></svg>the 4 retained errors, each traced to one imaging report</span></div>
+      </div>
+    </article>
+
+    <!-- 4 audit -->
+    <article class="row row-flip" id="results-audit">
+      <div class="row-text">
+        <p class="eyebrow">Audit · the 4 errors it retained</p>
+        <h3>Each confident error was traced to one imaging report.</h3>
+        <p>For each of the 4 errors it retained, the audit showed where the work-up went wrong. All 4 were hepatobiliary, and each could be traced to a single imaging report, at which the confidence rose from between 0.23 and 0.47 to between 0.72 and 0.85.</p>
+        <p>Without that report, repeating diagnostic scoring yielded the correct diagnosis in 3 of the 4 admissions.</p>
+      </div>
+      <figure class="fig" data-group="audit">
+        <div class="fig-tabs"><span class="eyebrow">Admission</span><div class="fig-tablist" role="tablist" aria-label="Admission"><button class="fig-tab" type="button" role="tab" data-panel="a" aria-selected="true" tabindex="0" title="panel A, gallstone pancreatitis coded as acute cholecystitis">A</button><button class="fig-tab" type="button" role="tab" data-panel="b" aria-selected="false" tabindex="-1" title="panel B, cholecystitis coded as gallstones without cholecystitis">B</button><button class="fig-tab" type="button" role="tab" data-panel="c" aria-selected="false" tabindex="-1" title="panel C, cholecystitis coded as bile duct obstruction">C</button><button class="fig-tab" type="button" role="tab" data-panel="d" aria-selected="false" tabindex="-1" title="panel D, cholecystitis coded as haemoperitoneum">D</button></div></div>
+        <button class="fig-stage" type="button" data-panel="a"><img src="assets/panels/audit-a.webp" width="2080" height="2035" loading="lazy" decoding="async" alt="A work-up shown step by step with the findings returned, the diagnosis at each state and bars for confidence and code probabilities. The confidence rises at the abdominal ultrasound."><span class="fig-zoom"><svg aria-hidden="true"><use href="#i-zoom"/></svg>Enlarge</span></button>
+        <figcaption class="fig-cap">A, gallstone pancreatitis coded as acute cholecystitis. The bars show the confidence in the diagnosis (navy), the summed probability of the codes that match the recorded disease (teal) and the probability of the code the agent finally chose (gold). The pink band indicates the arrival of the implicated imaging report.</figcaption>
+      </figure>
+    </article>
+
+    <!-- 5 treatment -->
+    <article class="row" id="results-treatment">
+      <div class="row-text">
+        <p class="eyebrow">Treatment · the same 2 decisions</p>
+        <h3>Drug orders judged guideline-adherent more often than the documented care.</h3>
+        <p>After diagnosis, Decision2Care used the same 2 types of decisions to select the treatment and recorded the steps that led to each order. It first decided whether each medication category or procedure group was indicated, then selected the regimen or procedure, and finally checked each order against the patient's allergies and renal function.</p>
+        <p>Decision2Care ordered 97.0% of the 1,024 treatments indicated by the rubrics. Averaged over a patient's categories, 88.2% of its drug decisions were judged guideline-adherent (95% CI 86.0 to 90.3%).</p>
+      </div>
+      <div class="card">
+        <div class="chart">
+          <p class="c-title">Indicated treatments ordered</p>
+          <p class="c-sub">Percent of 1,024 indicated treatments in 437 admissions</p>
+          <ul class="bars" style="--pad:58px">
+            <li class="bar is-d2c" tabindex="0" data-tip="Decision2Care
+97.0%|of 1,024 indicated treatments"><span class="bl">Decision2Care</span><span class="track"><i class="fill" style="--f:0.9700"></i><b class="val" style="--f:0.9700">97.0%</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, GPT-OSS-120B
+83.5%|of 1,024 indicated treatments"><span class="bl">MIRA-v2, GPT-OSS-120B</span><span class="track"><i class="fill" style="--f:0.8350"></i><b class="val" style="--f:0.8350">83.5%</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, GLM-5
+81.5%|of 1,024 indicated treatments"><span class="bl">MIRA-v2, GLM-5</span><span class="track"><i class="fill" style="--f:0.8150"></i><b class="val" style="--f:0.8150">81.5%</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, Claude Sonnet 5
+95.1%|of 1,024 indicated treatments"><span class="bl">MIRA-v2, Claude Sonnet 5</span><span class="track"><i class="fill" style="--f:0.9510"></i><b class="val" style="--f:0.9510">95.1%</b></span></li>
+          </ul>
+        </div>
+        <div class="chart">
+          <p class="c-title">Drug decisions judged guideline-adherent</p>
+          <p class="c-sub">Percent, averaged over a patient's categories, 355 admissions</p>
+          <ul class="bars" style="--pad:58px">
+            <li class="bar is-d2c" tabindex="0" data-tip="Decision2Care
+88.2%|of drug decisions judged guideline-adherent"><span class="bl">Decision2Care</span><span class="track"><i class="fill" style="--f:0.8820"></i><b class="val" style="--f:0.8820">88.2%</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, GPT-OSS-120B
+65.6%|of drug decisions judged guideline-adherent"><span class="bl">MIRA-v2, GPT-OSS-120B</span><span class="track"><i class="fill" style="--f:0.6560"></i><b class="val" style="--f:0.6560">65.6%</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, GLM-5
+58.7%|of drug decisions judged guideline-adherent"><span class="bl">MIRA-v2, GLM-5</span><span class="track"><i class="fill" style="--f:0.5870"></i><b class="val" style="--f:0.5870">58.7%</b></span></li>
+            <li class="bar " tabindex="0" data-tip="MIRA-v2, Claude Sonnet 5
+79.7%|of drug decisions judged guideline-adherent"><span class="bl">MIRA-v2, Claude Sonnet 5</span><span class="track"><i class="fill" style="--f:0.7970"></i><b class="val" style="--f:0.7970">79.7%</b></span></li>
+            <li class="bar is-doc" tabindex="0" data-tip="Documented first-day care
+81.4%|of drug decisions judged guideline-adherent"><span class="bl">Documented first-day care</span><span class="track"><i class="fill" style="--f:0.8140"></i><b class="val" style="--f:0.8140">81.4%</b></span></li>
+          </ul>
+        </div>
+      </div>
+    </article>
+    <div class="below">
+      <div class="grid2">
+        <figure class="fig" data-group="treatment">
+          <button class="fig-stage" type="button" data-panel="a-focus"><img src="assets/panels/treatment-a-focus.webp" width="1500" height="1377" loading="lazy" decoding="async" alt="Decision tree for one antibiotic order in an appendicitis admission. Of 42 categories, antibiotics are selected at 0.94. The regimen Choice selects metronidazole with ceftriaxone at 0.57, followed by the dose choices."><span class="fig-zoom"><svg aria-hidden="true"><use href="#i-zoom"/></svg>Enlarge</span></button>
+          <figcaption class="fig-cap">The medication decisions for one appendicitis admission. The agent selects medication categories, a regimen, and doses. It then checks each drug for a listed or cross-reacting allergy and for an excessive dose at the recorded kidney function.</figcaption>
+        </figure>
+        <div class="card">
+          <p class="c-title">The same order after the patient checks</p>
+          <p class="c-sub">The patient had a listed cefaclor allergy. The order can be audited through the 3 choices and the 2 flags that led to it.</p>
+          <ol class="trace">
+            <li><span>Metronidazole with ceftriaxone<small>Regimen Choice, probability 0.57</small></span><span class="no-chip">allergy check 0.56, flagged</span></li>
+            <li><span>Metronidazole with cefazolin<small>Chosen again, probability 0.27</small></span><span class="no-chip">allergy check 0.56, flagged</span></li>
+            <li><span>Metronidazole with ciprofloxacin<small>Chosen again, probability 0.28</small></span><span class="ok-chip">allergy check 0.07, kept</span></li>
+          </ol>
+          <p class="c-note">A concern is flagged at a score of at least 0.50. The renal dosing check on the final regimen scored 0.05.</p>
+          <p class="order"><span class="eyebrow">Final antibiotic order</span>Metronidazole 500 mg IV 3 times daily with ciprofloxacin 500 mg orally twice daily</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6 prognosis -->
+    <article class="row row-flip" id="results-prognosis">
+      <div class="row-text">
+        <p class="eyebrow">Prognosis · 8 disease cohorts</p>
+        <h3>With about half the records, it predicted death as well as three ICU clinicians.</h3>
+        <p>Given the disease, the agent chose, step by step, which records to read and when to stop. For a prediction made 8 h after arrival in the emergency department, it then gave the probability of death within 7, 30 and 90 days, and in the intensive care unit the probability of death before discharge.</p>
+        <p>At 8 h after arrival, the prediction ranked the patients who died within 30 days with an AUROC of 0.871 in 8,565 entries of 8 disease cohorts from MIMIC-III and MIMIC-IV. With the agent unchanged, the AUROC was 0.813 in 555 patients with pulmonary embolism at Stanford Health Care.</p>
+      </div>
+      <figure class="fig" data-group="mortality">
+        <div class="fig-tabs"><span class="eyebrow">Patient</span><div class="fig-tablist" role="tablist" aria-label="Patient"><button class="fig-tab" type="button" role="tab" data-panel="a" aria-selected="true" tabindex="0" title="panel A, emergency department, a patient who died within 30 days">A</button><button class="fig-tab" type="button" role="tab" data-panel="b" aria-selected="false" tabindex="-1" title="panel B, emergency department, a patient alive at 30 days">B</button><button class="fig-tab" type="button" role="tab" data-panel="c" aria-selected="false" tabindex="-1" title="panel C, intensive care unit, a patient who died in hospital">C</button><button class="fig-tab" type="button" role="tab" data-panel="d" aria-selected="false" tabindex="-1" title="panel D, intensive care unit, a patient discharged alive">D</button></div></div>
+        <button class="fig-stage" type="button" data-panel="a"><img src="assets/panels/mortality-a.webp" width="2080" height="1592" loading="lazy" decoding="async" alt="Predicted probability of death within 30 days after each retrieval. It rises from 0.51 to 0.79 when the agent reads the brain CT report and ends at 0.84."><span class="fig-zoom"><svg aria-hidden="true"><use href="#i-zoom"/></svg>Enlarge</span></button>
+        <figcaption class="fig-cap">A, the probability of death within 30 days, predicted 8 h after arrival in the emergency department, for a patient who died within 30 days. The curve gives the prediction with the disease alone (step 0) and after each retrieval. The heatmap shows the probability the agent gave to each class of records at each step, and the class that it read is outlined in orange.</figcaption>
+      </figure>
+    </article>
+    <div class="below">
+      <div class="sub-head">
+        <p class="eyebrow">From the ICU clinicians</p>
+        <h3>What three ICU clinicians found when they reviewed the work-ups.</h3>
+        <p>Three ICU clinicians predicted the outcome of 72 cases, selected so that the agent's wrong predictions were over-represented, and then reviewed its work-up.</p>
+      </div>
+      <div class="cards3 cards3-tight">
+        <article class="card tcard is-note">
+          <p class="eyebrow">Records read</p>
+          <p>The ICU clinicians were given every record offered to the agent, a median of 124 per case, of which the agent had read a median of 54%.</p>
+        </article>
+        <article class="card tcard is-note">
+          <p class="eyebrow">Nothing essential unread</p>
+          <p>The agent read 1,297 of the 1,397 available records they marked essential for their own predictions. In 196 of their 216 reviews they found no essential record left unread.</p>
+        </article>
+        <article class="card tcard is-note">
+          <p class="eyebrow">At least defensible</p>
+          <p>When shown the agent's prediction, they rated it as at least defensible in 182 of their 216 reviews. In the same cases, the agent's AUROC did not differ from the ICU clinicians' mean prediction at 30 or 90 days.</p>
+        </article>
+      </div>
+      <figure class="fig" data-group="performance">
+        <button class="fig-stage" type="button" data-panel="all"><img src="assets/fig6-mortality-performance.webp" width="2200" height="1538" loading="lazy" decoding="async" alt="ROC curves for 30-day and 90-day mortality with the predictions of three ICU clinicians, and hourly AUROC curves for eight ICU disease cohorts against three severity scores."><span class="fig-zoom"><svg aria-hidden="true"><use href="#i-zoom"/></svg>Enlarge</span></button>
+        <figcaption class="fig-cap">A and B, ROC curves of the prediction made 8 h after arrival in the emergency department for death within 30 and 90 days, from the mean of 5 runs on 8 disease cohorts. Crosses show the predictions of 3 ICU clinicians on 72 cases in which wrong agent predictions were over-represented. C, AUROC for predicting in-hospital death from the first 1 to 12 h of ICU records, by disease, with 3 severity scores computed at 24 h.</figcaption>
+      </figure>
+      <p class="below-p">In the ICU, 12 h of records were enough to exceed 3 severity scores computed at 24 h in intracerebral haemorrhage and traumatic brain injury (AUROC 0.874 and 0.872). In the other 6 ICU cohorts, the prediction from 12 h of records did not differ from the severity scores computed at 24 h.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== SYSTEM -->
+<section class="wrap sec" id="system" aria-labelledby="system-h">
+  <h2 class="sec-h" id="system-h">One interface for diagnosis, treatment and prognosis.</h2>
+  <p class="sec-lead">Diagnosis, treatment and prognosis all use the same interface and differ in their action menus, execution rules and endpoints.</p>
+      <figure class="fig sys-fig" data-group="overview">
+        <button class="fig-stage" type="button" data-panel="d"><img src="assets/panels/overview-tools.webp" width="2080" height="730" loading="lazy" decoding="async" alt="Four tools shown as columns: physical examination, laboratory tests, imaging and vital signs, each with the typed question it asks and what it returns."><img src="assets/panels/overview-treatment.webp" width="2080" height="520" loading="lazy" decoding="async" alt="Flow of the treatment recommendation: category and procedure questions, regimen, dose and home medications, ending in the recommended orders."><span class="fig-zoom"><svg aria-hidden="true"><use href="#i-zoom"/></svg>Enlarge</span></button>
+        <figcaption class="fig-cap">Each tool asks typed questions to decide what to retrieve (D). After the final diagnosis, a Noul for each medication and procedure category selects the indicated options, and Choices select the regimen, the action on each home medication and the procedure (E).</figcaption>
+      </figure>
+  <dl class="defs">
+    <div><dt>decision model</dt><dd>Unless stated otherwise, the decision model is Jev, developed by TypeSafe AI. It can be replaced by another decision model without changing the controller or the questions.</dd></div>
+    <div><dt>controller</dt><dd>The controller applies fixed rules to the returned probabilities. It executes the most probable action, and orders a test when its probability reaches 0.5.</dd></div>
+    <div><dt>tools</dt><dd>Physical examination, vital signs, laboratory tests, imaging and the home medication list. Each tool asks further questions to decide what to retrieve.</dd></div>
+    <div><dt>audit record</dt><dd>The saved work-up record links the questions, the returned probabilities, the rule the controller applied, the executed actions, the returned observations and the final code.</dd></div>
+    <div><dt>treatment</dt><dd>After the final diagnosis, a Noul for each medication and procedure category selects the indicated options. Choices then select the drug regimen with its dose, route and frequency, the action on each home medication and the ICD-9-CM procedure.</dd></div>
+    <div><dt>on site</dt><dd>Two alternatives to Jev reached comparable diagnostic accuracy and ran on a single NVIDIA DGX Spark. A hospital could run the agent on that hardware and keep its patient records on site.</dd></div>
+  </dl>
+</section>
+
+<!-- ================================================================== LIMITATIONS -->
+<section class="wrap sec" id="limitations" aria-labelledby="limits-h">
+  <h2 class="sec-h" id="limits-h">What the evaluation does not show.</h2>
+  <ul class="limits">
+    <li>The evaluation was retrospective. Prospective studies would be needed to assess how clinicians use the agent, how much case review costs and whether there is any patient benefit.</li>
+    <li>We evaluated diagnostic confidence as a ranking score. Its calibration would need to be assessed in the target population, and thresholds for diagnostic confidence and mortality prediction established and validated there.</li>
+    <li>Decision2Care can be confident in a wrong diagnosis. In every instance where the agent retained a wrong diagnosis, the audit traced the increase in confidence back to a single imaging report.</li>
+    <li>The agent read the radiologist's report and not the images.</li>
+    <li>Early decisions to limit care are associated with death, and a mortality prediction may partly reflect those decisions if they are recorded in the chart.</li>
+    <li>Clinicians determine what to do in response to the agent's diagnoses, suggested orders and predictions.</li>
+  </ul>
+</section>
+
+<!-- ================================================================== RUN IT -->
+<section class="wrap sec" id="run" aria-labelledby="run-h">
+  <h2 class="sec-h" id="run-h">Run Decision2Care yourself.</h2>
+  <p class="sec-lead">The core source code for Decision2Care, including diagnosis, treatment selection and mortality prediction, is publicly available. The released code includes the wording of every question, prompt and answer option.</p>
+  <ol class="steps">
+    <li class="step">
+      <h3>Install</h3>
+      <p>Python 3.10 or newer.</p>
+      <div class="codebox"><pre class="code"><code>git clone https://github.com/peterhan91/Decision2Care.git
+cd Decision2Care
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[test]'</code></pre><button class="copy" type="button">Copy</button></div>
+    </li>
+    <li class="step">
+      <h3>Run the three synthetic examples</h3>
+      <p>No model account or patient data is needed. The synthetic run verifies execution, logging and the input and output contracts. Its outputs are protocol tests, not clinical predictions or reproduced benchmark scores.</p>
+      <div class="codebox"><pre class="code"><code>bash scripts/run_synthetic.sh
+python -m pytest -q</code></pre><button class="copy" type="button">Copy</button></div>
+    </li>
+    <li class="step">
+      <h3>Run on records</h3>
+      <p>Live runs need access to the decision model and credentialed clinical data. The repository's README gives the full commands.</p>
+      <div class="codebox"><pre class="code"><code>python -m pip install -e '.[live]'
+<span class="cm"># with TYPESAFE_API_KEY set and authorized records in place</span>
+decision2care diagnosis  ...
+decision2care treatment  ...
+decision2care prognosis  ...</code></pre></div>
+    </li>
+  </ol>
+  <div class="cards3 repos">
+    <article class="card tcard">
+      <p class="eyebrow">Code</p>
+      <h3><a href="https://github.com/peterhan91/Decision2Care">Decision2Care<svg class="ext" aria-hidden="true"><use href="#i-ext"/></svg></a></h3>
+      <p>Diagnosis, treatment selection and mortality prediction, released under the MIT licence. The logo and the overview figure are not covered by it. Code for cohort construction and data processing will be released upon publication.</p>
+    </article>
+    <article class="card tcard">
+      <p class="eyebrow">Clinical data</p>
+      <h3><a href="https://physionet.org/content/mimiciv/">MIMIC on PhysioNet<svg class="ext" aria-hidden="true"><use href="#i-ext"/></svg></a></h3>
+      <p>MIMIC-III, MIMIC-IV, MIMIC-IV-ED and MIMIC-IV-Note are available through PhysioNet. Access requires PhysioNet credentialing, completion of the required research training and acceptance of the applicable data-use agreements.</p>
+    </article>
+    <article class="card tcard">
+      <p class="eyebrow">Second centre</p>
+      <h3><a href="https://inspect.stanford.edu">INSPECT<svg class="ext" aria-hidden="true"><use href="#i-ext"/></svg></a></h3>
+      <p>INSPECT is available from the Stanford Center for Artificial Intelligence in Medicine and Imaging under a data use agreement for non-commercial research.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ================================================================== AUTHORS -->
+<section class="wrap sec" id="authors" aria-labelledby="authors-h">
+  <h2 class="sec-h" id="authors-h">Meet the team.</h2>
+  <!-- Photographs are in assets/authors/, named as in the data-photo attribute below. An author without
+       a picture is shown with initials. -->
+  <ul class="team has-photos" id="team" data-photos="off">
+    <li class="person g-penn" data-photo="tiancheng-bao"><span class="ph" aria-hidden="true">TB<img src="assets/authors/tiancheng-bao.jpg" width="514" height="514" alt="" loading="lazy" decoding="async"></span><div><b>Tiancheng Bao<sup>1,†</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+    <li class="person g-penn" data-photo="riga-wu"><span class="ph" aria-hidden="true">RW<img src="assets/authors/riga-wu.jpg" width="292" height="292" alt="" loading="lazy" decoding="async"></span><div><b>Riga Wu<sup>1,†</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+    <li class="person g-aachen" data-photo="jan-wienhold"><span class="ph" aria-hidden="true">JW<img src="assets/authors/jan-wienhold.jpg" width="640" height="640" alt="" loading="lazy" decoding="async"></span><div><b>Jan Wienhold<sup>2,3,†</sup></b><span class="aff">RWTH Aachen University</span></div></li>
+    <li class="person g-aachen" data-photo="sebastian-billig"><span class="ph" aria-hidden="true">SB<img src="assets/authors/sebastian-billig.jpg" width="447" height="447" alt="" loading="lazy" decoding="async"></span><div><b>Sebastian Billig<sup>2,3</sup></b><span class="aff">RWTH Aachen University</span></div></li>
+    <li class="person g-aachen" data-photo="patrick-winnersbach"><span class="ph" aria-hidden="true">PW<img src="assets/authors/patrick-winnersbach.jpg" width="640" height="640" alt="" loading="lazy" decoding="async"></span><div><b>Patrick Winnersbach<sup>2,3</sup></b><span class="aff">RWTH Aachen University</span></div></li>
+    <li class="person g-penn" data-photo="hsuan-chih-chen"><span class="ph" aria-hidden="true">HC<img src="assets/authors/hsuan-chih-chen.jpg" width="636" height="636" alt="" loading="lazy" decoding="async"></span><div><b>Hsuan-Chih Chen<sup>1</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+    <li class="person g-penn" data-photo="akis-giannoukos"><span class="ph" aria-hidden="true">AG</span><div><b>Akis Giannoukos<sup>1</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+    <li class="person g-penn" data-photo="jiayang-li"><span class="ph" aria-hidden="true">JL</span><div><b>Jiayang Li<sup>1</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+    <li class="person g-penn" data-photo="li-shen"><span class="ph" aria-hidden="true">LS<img src="assets/authors/li-shen.jpg" width="400" height="400" alt="" loading="lazy" decoding="async"></span><div><b>Li Shen<sup>1,4,5</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+    <li class="person g-penn" data-photo="gary-weissman"><span class="ph" aria-hidden="true">GW<img src="assets/authors/gary-weissman.jpg" width="640" height="640" alt="" loading="lazy" decoding="async"></span><div><b>Gary Weissman<sup>4,6</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+    <li class="person g-penn" data-photo="eduardo-mortani-barbosa"><span class="ph" aria-hidden="true">EB<img src="assets/authors/eduardo-mortani-barbosa.jpg" width="640" height="640" alt="" loading="lazy" decoding="async"></span><div><b>Eduardo J. Mortani Barbosa Jr.<sup>1</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+    <li class="person g-dresden" data-photo="dyke-ferber"><span class="ph" aria-hidden="true">DF<img src="assets/authors/dyke-ferber.jpg" width="640" height="640" alt="" loading="lazy" decoding="async"></span><div><b>Dyke Ferber<sup>7,8</sup></b><span class="aff">TUD Dresden and NCT Heidelberg</span></div></li>
+    <li class="person g-dresden" data-photo="jakob-nikolas-kather"><span class="ph" aria-hidden="true">JK<img src="assets/authors/jakob-nikolas-kather.jpg" width="640" height="640" alt="" loading="lazy" decoding="async"></span><div><b>Jakob Nikolas Kather<sup>7,8,9</sup></b><span class="aff">TUD Dresden and Heidelberg University</span></div></li>
+    <li class="person g-penn" data-photo="christos-davatzikos"><span class="ph" aria-hidden="true">CD<img src="assets/authors/christos-davatzikos.jpg" width="225" height="225" alt="" loading="lazy" decoding="async"></span><div><b>Christos Davatzikos<sup>1,5</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+    <li class="person g-aachen" data-photo="daniel-truhn"><span class="ph" aria-hidden="true">DT<img src="assets/authors/daniel-truhn.jpg" width="640" height="640" alt="" loading="lazy" decoding="async"></span><div><b>Daniel Truhn<sup>10,‡</sup></b><span class="aff">University Hospital RWTH Aachen</span></div></li>
+    <li class="person g-penn" data-photo="tianyu-han"><span class="ph" aria-hidden="true">TH<img src="assets/authors/tianyu-han.jpg" width="427" height="427" alt="" loading="lazy" decoding="async"></span><div><b>Tianyu Han<sup>1,5,*,‡</sup></b><span class="aff">University of Pennsylvania</span></div></li>
+  </ul>
+  <p class="note marks"><sup>†</sup> These authors contributed equally to this work. <sup>‡</sup> These authors contributed equally to this work. <sup>*</sup> Corresponding author.</p>
+  <ol class="affils">
+    <li><b>1</b><span>Department of Radiology, Perelman School of Medicine, University of Pennsylvania, Philadelphia, PA, USA.</span></li>
+    <li><b>2</b><span>Department of Anesthesiology, Medical Faculty, RWTH Aachen University, Aachen, Germany.</span></li>
+    <li><b>3</b><span>Department of Intensive Care and Intermediate Care, Medical Faculty, RWTH Aachen University, Aachen, Germany.</span></li>
+    <li><b>4</b><span>Department of Biostatistics, Epidemiology and Informatics, Perelman School of Medicine, University of Pennsylvania, Philadelphia, PA, USA.</span></li>
+    <li><b>5</b><span>Center for Artificial Intelligence and Data Science for Integrated Diagnostics (AI2D), Perelman School of Medicine, University of Pennsylvania, Philadelphia, PA, USA.</span></li>
+    <li><b>6</b><span>Pulmonary, Allergy, and Critical Care Division, Department of Medicine, Perelman School of Medicine, University of Pennsylvania, Philadelphia, PA, USA.</span></li>
+    <li><b>7</b><span>Else Kröner Fresenius Center for Digital Health, Faculty of Medicine and University Hospital Carl Gustav Carus, TUD Dresden University of Technology, Dresden, Germany.</span></li>
+    <li><b>8</b><span>Department of Medical Oncology, National Center for Tumor Diseases (NCT), University Hospital Heidelberg, Heidelberg, Germany.</span></li>
+    <li><b>9</b><span>Institute for Medical AI (IMAI), Heidelberg University Hospital and Medical Faculty of Heidelberg University, Heidelberg, Germany.</span></li>
+    <li><b>10</b><span>Department of Diagnostic and Interventional Radiology, University Hospital RWTH Aachen, Aachen, Germany.</span></li>
+  </ol>
+</section>
+
+<!-- ================================================================== PAPER -->
+<section class="wrap sec" id="paper" aria-labelledby="paper-h">
+  <div class="paper">
+    <p class="eyebrow">Manuscript, 2026</p>
+    <h2 id="paper-h">Auditable Clinical Support with Decision Agents</h2>
+    <p class="paper-authors">Tiancheng Bao, Riga Wu, Jan Wienhold, Sebastian Billig, Patrick Winnersbach, Hsuan-Chih Chen, Akis Giannoukos, Jiayang Li, Li Shen, Gary Weissman, Eduardo J. Mortani Barbosa Jr., Dyke Ferber, Jakob Nikolas Kather, Christos Davatzikos, Daniel Truhn and Tianyu Han</p>
+    <!-- TODO: replace the next line with a link to the preprint or the journal page once the paper is public. -->
+    <p class="paper-aff" id="paper-link">A link to the paper will be added here once it is public.</p>
+    <details class="bib">
+      <summary>BibTeX</summary>
+      <div class="codebox"><pre class="code" id="bibtex"><code>@misc{bao2026decision2care,
+  title  = {Auditable Clinical Support with Decision Agents},
+  author = {Bao, Tiancheng and
+            Wu, Riga and
+            Wienhold, Jan and
+            Billig, Sebastian and
+            Winnersbach, Patrick and
+            Chen, Hsuan-Chih and
+            Giannoukos, Akis and
+            Li, Jiayang and
+            Shen, Li and
+            Weissman, Gary and
+            Mortani Barbosa, Jr., Eduardo J. and
+            Ferber, Dyke and
+            Kather, Jakob Nikolas and
+            Davatzikos, Christos and
+            Truhn, Daniel and
+            Han, Tianyu},
+  year   = {2026},
+  note   = {Manuscript}
+}</code></pre><button class="copy" type="button">Copy</button></div>
+    </details>
+    <p class="contact" id="contact">Questions about the work go to Tianyu Han at <a href="mailto:tianyu.han@pennmedicine.upenn.edu">tianyu.han@pennmedicine.upenn.edu</a>.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <p>© 2026 The authors. Department of Radiology, Perelman School of Medicine, University of Pennsylvania. Decision2Care was evaluated retrospectively on de-identified records. Prospective studies would be needed to assess its use by clinicians and any patient benefit.</p>
+    <nav aria-label="Footer"><a href="https://github.com/peterhan91/Decision2Care">Code</a><a href="#paper">Paper</a><a href="#contact">Contact</a><a href="#top">Back to top</a></nav>
+  </div>
+</footer>
+
+<div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-label="Figure viewer">
+  <div class="v-bar">
+    <p class="v-title" id="v-title"></p>
+    <div class="v-tabs" id="v-tabs" role="tablist" aria-label="Panels of the figure"></div>
+    <button class="v-btn" type="button" id="v-zoom">Actual size</button>
+    <button class="v-btn" type="button" id="v-close">Close</button>
+  </div>
+  <div class="v-stage" id="v-stage"><img id="v-img" alt=""></div>
+  <p class="v-cap" id="v-cap"></p>
+</div>
+
+<script type="application/json" id="d2c-data">{"table1":{"systems":["d2c","gpt","glm","claude"],"labels":{"d2c":"Decision2Care","gpt":"MIRA-v2, GPT-OSS-120B","glm":"MIRA-v2, GLM-5","claude":"MIRA-v2, Claude Sonnet 5"},"accuracy":[{"disease":"Appendicitis","short":"Appendicitis","n":148,"sys":{"d2c":{"mean":99.9,"min":99.3,"max":100.0},"gpt":{"mean":98.6,"min":98.0,"max":99.3},"glm":{"mean":98.5,"min":98.0,"max":98.6},"claude":{"mean":99.2,"min":98.6,"max":99.3}}},{"disease":"Cholecystitis","short":"Cholecystitis","n":129,"sys":{"d2c":{"mean":77.7,"min":77.5,"max":78.3},"gpt":{"mean":81.2,"min":79.8,"max":82.9},"glm":{"mean":85.7,"min":84.5,"max":86.8},"claude":{"mean":91.0,"min":88.4,"max":93.0}}},{"disease":"Diverticulitis","short":"Diverticulitis","n":54,"sys":{"d2c":{"mean":88.1,"min":85.2,"max":90.7},"gpt":{"mean":90.7,"min":88.9,"max":92.6},"glm":{"mean":93.7,"min":92.6,"max":94.4},"claude":{"mean":95.6,"min":94.4,"max":96.3}}},{"disease":"Pancreatitis","short":"Pancreatitis","n":52,"sys":{"d2c":{"mean":91.5,"min":88.5,"max":92.3},"gpt":{"mean":94.2,"min":90.4,"max":98.1},"glm":{"mean":98.5,"min":98.1,"max":100.0},"claude":{"mean":98.1,"min":96.2,"max":100.0}}},{"disease":"Pneumonia","short":"Pneumonia","n":21,"sys":{"d2c":{"mean":45.7,"min":42.9,"max":47.6},"gpt":{"mean":37.1,"min":33.3,"max":42.9},"glm":{"mean":52.4,"min":47.6,"max":61.9},"claude":{"mean":53.3,"min":52.4,"max":57.1}}},{"disease":"Pulmonary embolism","short":"PE","n":15,"sys":{"d2c":{"mean":92.0,"min":86.7,"max":93.3},"gpt":{"mean":70.7,"min":60.0,"max":80.0},"glm":{"mean":88.0,"min":80.0,"max":93.3},"claude":{"mean":84.0,"min":80.0,"max":93.3}}},{"disease":"Urinary tract infection","short":"UTI","n":18,"sys":{"d2c":{"mean":82.2,"min":77.8,"max":83.3},"gpt":{"mean":60.0,"min":50.0,"max":72.2},"glm":{"mean":78.9,"min":72.2,"max":83.3},"claude":{"mean":82.2,"min":72.2,"max":94.4}}},{"disease":"Bowel obstruction","short":"Bowel obstr.","n":67,"sys":{"d2c":{"mean":91.6,"min":91.0,"max":92.5},"gpt":{"mean":90.4,"min":88.1,"max":94.0},"glm":{"mean":94.9,"min":92.5,"max":97.0},"claude":{"mean":94.3,"min":92.5,"max":97.0}}},{"disease":"Heart failure","short":"Heart failure","n":13,"sys":{"d2c":{"mean":64.6,"min":61.5,"max":69.2},"gpt":{"mean":81.5,"min":76.9,"max":84.6},"glm":{"mean":78.5,"min":69.2,"max":84.6},"claude":{"mean":81.5,"min":76.9,"max":84.6}}},{"disease":"Subarachnoid haemorrhage","short":"SAH","n":7,"sys":{"d2c":{"mean":42.9,"min":42.9,"max":42.9},"gpt":{"mean":22.9,"min":14.3,"max":42.9},"glm":{"mean":34.3,"min":28.6,"max":42.9},"claude":{"mean":40.0,"min":28.6,"max":42.9}}},{"disease":"Myocardial infarction","short":"MI","n":13,"sys":{"d2c":{"mean":69.2,"min":69.2,"max":69.2},"gpt":{"mean":86.2,"min":84.6,"max":92.3},"glm":{"mean":83.1,"min":76.9,"max":92.3},"claude":{"mean":86.2,"min":84.6,"max":92.3}}},{"disease":"Meningitis","short":"Meningitis","n":9,"sys":{"d2c":{"mean":100.0,"min":100.0,"max":100.0},"gpt":{"mean":88.9,"min":77.8,"max":100.0},"glm":{"mean":80.0,"min":66.7,"max":88.9},"claude":{"mean":82.2,"min":66.7,"max":100.0}}}],"time":{"d2c":{"median":2.2,"q1":1.7,"q3":2.7},"gpt":{"median":92.7,"q1":74.3,"q3":116.6},"glm":{"median":92.4,"q1":75.5,"q3":121.8},"claude":{"median":100.1,"q1":87.5,"q3":119.1}},"cost_case":{"d2c":0.0024,"gpt":0.0376,"glm":0.1266,"claude":0.146},"cost_total":{"d2c":1.31,"gpt":20.5,"glm":69.1,"claude":79.7},"cost_five":{"d2c":null,"gpt":102.6,"glm":345.5,"claude":398.5}},"cases":[{"id":"pe","tab":"Pulmonary embolism","true":"pulmonary_embolism","true_label":"Pulmonary embolism","recorded":"Pulmonary embolism","blurb":"Right upper abdominal pain shortly after cholecystectomy. The history alone pointed to cholecystitis, although the gallbladder had been removed.","names":{"pulmonary_embolism":"Pulmonary embolism","cholecystitis":"Cholecystitis","pancreatitis":"Pancreatitis","other":"None of the 12 diseases"},"states":[{"step":0,"label":"History","findings":"Recent gallbladder surgery. RUQ pain to shoulder/back. Pain with deep inspiration.","unavailable":false,"p_true":0.05,"top":"cholecystitis","diff":[["pulmonary_embolism",0.05],["cholecystitis",0.89],["pancreatitis",0.0],["other",0.06]],"icd":"R10.11","icd_title":"Right upper quadrant pain","icd_ok":false},{"step":1,"label":"Physical examination","findings":null,"unavailable":false,"p_true":0.1,"top":"cholecystitis","diff":[["pulmonary_embolism",0.1],["cholecystitis",0.83],["pancreatitis",0.0],["other",0.07]],"icd":"K81.0","icd_title":"Acute cholecystitis","icd_ok":false},{"step":2,"label":"Laboratory order","findings":"D-dimer: 2,550 ng/mL (high). Reference: 0–500 ng/mL. Lipase: 73 IU/L.","unavailable":false,"p_true":0.37,"top":"cholecystitis","diff":[["pulmonary_embolism",0.37],["cholecystitis",0.47],["pancreatitis",0.12],["other",0.04]],"icd":"K81.0","icd_title":"Acute cholecystitis","icd_ok":false},{"step":3,"label":"Imaging: abdominal ultrasound","findings":null,"unavailable":true,"p_true":0.33,"top":"cholecystitis","diff":[["pulmonary_embolism",0.33],["cholecystitis",0.52],["pancreatitis",0.11],["other",0.04]],"icd":"K81.0","icd_title":"Acute cholecystitis","icd_ok":false},{"step":4,"label":"Imaging: abdominal CT","findings":"Gallbladder-fossa change, likely postoperative. No drainable collection. Minimal RLL atelectasis.","unavailable":false,"p_true":0.45,"top":"pulmonary_embolism","diff":[["pulmonary_embolism",0.45],["cholecystitis",0.35],["pancreatitis",0.12],["other",0.08]],"icd":"K81.0","icd_title":"Acute cholecystitis","icd_ok":false},{"step":5,"label":"Imaging: chest CT","findings":"Pulmonary arterial filling defects in the RLL and segmental arteries. No right ventricular strain.","unavailable":false,"p_true":0.96,"top":"pulmonary_embolism","diff":[["pulmonary_embolism",0.96],["cholecystitis",0.04],["pancreatitis",0.0],["other",0.0]],"icd":"I26.94","icd_title":"Multiple subsegmental pulmonary emboli without acute cor pulmonale","icd_ok":true}],"decisions":[{"asked_on":0,"selected":"physical_examination","probs":[["Physical examination",0.92,true],["Imaging",0.06,false],["Final diagnosis",0.01,false],["Laboratory tests",0.01,false]],"suffices":0.16,"leads_to":1},{"asked_on":1,"selected":"laboratory_tests","probs":[["Laboratory tests",0.58,true],["Imaging",0.4,false],["Final diagnosis",0.02,false]],"suffices":0.13,"leads_to":2},{"asked_on":2,"selected":"imaging","probs":[["Imaging",0.97,true],["Final diagnosis",0.02,false],["Laboratory tests",0.01,false]],"suffices":0.09,"leads_to":3},{"asked_on":3,"selected":"imaging","probs":[["Imaging",0.97,true],["Final diagnosis",0.02,false],["Laboratory tests",0.01,false]],"suffices":0.1,"leads_to":4},{"asked_on":4,"selected":"imaging","probs":[["Imaging",0.58,true],["Final diagnosis",0.23,false],["Laboratory tests",0.19,false]],"suffices":0.12,"leads_to":5},{"asked_on":5,"selected":"final_diagnosis","probs":[["Final diagnosis",0.8,true],["Laboratory tests",0.15,false],["Imaging",0.05,false]],"suffices":0.36,"leads_to":"final"}],"runs_correct":5},{"id":"meningitis","tab":"Meningitis","true":"meningitis","true_label":"Meningitis","recorded":"Meningitis, likely viral","blurb":"A patient with multiple sclerosis and a severe headache. The history alone pointed to subarachnoid haemorrhage.","names":{"meningitis":"Meningitis","subarachnoid_hemorrhage":"Subarachnoid haemorrhage","other":"None of the 12 diseases"},"states":[{"step":0,"label":"History","findings":"Severe headache. Photophobia, nausea and neck discomfort. Primary progressive MS.","unavailable":false,"p_true":0.11,"top":"subarachnoid_hemorrhage","diff":[["meningitis",0.11],["subarachnoid_hemorrhage",0.79],["other",0.1]],"icd":"G44.53","icd_title":"Primary thunderclap headache","icd_ok":false},{"step":1,"label":"Imaging: head CT","findings":null,"unavailable":false,"p_true":0.4,"top":"other","diff":[["meningitis",0.4],["subarachnoid_hemorrhage",0.01],["other",0.59]],"icd":"G44.89","icd_title":"Other headache syndrome","icd_ok":false},{"step":2,"label":"Physical examination","findings":null,"unavailable":false,"p_true":0.43,"top":"other","diff":[["meningitis",0.43],["subarachnoid_hemorrhage",0.02],["other",0.55]],"icd":"G35","icd_title":"Multiple sclerosis","icd_ok":false},{"step":3,"label":"Imaging: head MRI","findings":"White-matter T2/FLAIR lesions. No enhancement to suggest acute demyelination. “No evidence of leptomeningeal or parenchymal infection.”","unavailable":false,"p_true":0.12,"top":"other","diff":[["meningitis",0.12],["subarachnoid_hemorrhage",0.01],["other",0.87]],"icd":"G35","icd_title":"Multiple sclerosis","icd_ok":false},{"step":4,"label":"Laboratory order","findings":null,"unavailable":false,"p_true":0.21,"top":"other","diff":[["meningitis",0.21],["subarachnoid_hemorrhage",0.01],["other",0.78]],"icd":"G35","icd_title":"Multiple sclerosis","icd_ok":false},{"step":5,"label":"Vital signs","findings":null,"unavailable":false,"p_true":0.18,"top":"other","diff":[["meningitis",0.18],["subarachnoid_hemorrhage",0.0],["other",0.82]],"icd":"G35","icd_title":"Multiple sclerosis","icd_ok":false},{"step":6,"label":"Laboratory order: magnesium and phosphate","findings":null,"unavailable":false,"p_true":0.17,"top":"other","diff":[["meningitis",0.17],["subarachnoid_hemorrhage",0.01],["other",0.82]],"icd":"G35","icd_title":"Multiple sclerosis","icd_ok":false},{"step":7,"label":"Laboratory order: CSF cell count","findings":"Total nucleated cells: 27/µL. Other requested CSF haematology unavailable.","unavailable":false,"p_true":0.4,"top":"other","diff":[["meningitis",0.4],["subarachnoid_hemorrhage",0.01],["other",0.59]],"icd":"G35","icd_title":"Multiple sclerosis","icd_ok":false},{"step":8,"label":"Laboratory order: CSF chemistry and differential","findings":"Protein: 125 mg/dL (high). Glucose: 46 mg/dL. Lymphocytes: 73%.","unavailable":false,"p_true":0.76,"top":"meningitis","diff":[["meningitis",0.76],["subarachnoid_hemorrhage",0.01],["other",0.23]],"icd":"G35","icd_title":"Multiple sclerosis","icd_ok":false},{"step":9,"label":"Laboratory order: microbiology","findings":null,"unavailable":false,"p_true":0.79,"top":"meningitis","diff":[["meningitis",0.79],["subarachnoid_hemorrhage",0.01],["other",0.2]],"icd":"G03.9","icd_title":"Meningitis, unspecified","icd_ok":true},{"step":10,"label":"Home medication list","findings":null,"unavailable":false,"p_true":0.78,"top":"meningitis","diff":[["meningitis",0.78],["subarachnoid_hemorrhage",0.01],["other",0.21]],"icd":"G03.9","icd_title":"Meningitis, unspecified","icd_ok":true}],"decisions":[{"asked_on":0,"selected":"imaging","probs":[["Imaging",0.5,true],["Physical examination",0.43,false],["Vital signs",0.07,false],["Final diagnosis",0.0,false],["Laboratory tests",0.0,false],["Home medication list",0.0,false]],"suffices":0.05,"leads_to":1},{"asked_on":1,"selected":"physical_examination","probs":[["Physical examination",0.75,true],["Imaging",0.19,false],["Vital signs",0.04,false],["Laboratory tests",0.02,false],["Home medication list",0.0,false],["Final diagnosis",0.0,false]],"suffices":0.06,"leads_to":2},{"asked_on":2,"selected":"imaging","probs":[["Imaging",0.56,true],["Vital signs",0.25,false],["Laboratory tests",0.17,false],["Home medication list",0.01,false],["Final diagnosis",0.01,false]],"suffices":0.07,"leads_to":3},{"asked_on":3,"selected":"laboratory_tests","probs":[["Laboratory tests",0.6,true],["Vital signs",0.3,false],["Final diagnosis",0.05,false],["Imaging",0.03,false],["Home medication list",0.02,false]],"suffices":0.09,"leads_to":4},{"asked_on":4,"selected":"vital_signs","probs":[["Vital signs",0.49,true],["Laboratory tests",0.34,false],["Home medication list",0.06,false],["Final diagnosis",0.06,false],["Imaging",0.05,false]],"suffices":0.09,"leads_to":5},{"asked_on":5,"selected":"laboratory_tests","probs":[["Laboratory tests",0.4,true],["Imaging",0.29,false],["Home medication list",0.23,false],["Final diagnosis",0.08,false],["Vital signs",0.0,false]],"suffices":0.09,"leads_to":6},{"asked_on":6,"selected":"laboratory_tests","probs":[["Laboratory tests",0.66,true],["Home medication list",0.15,false],["Imaging",0.11,false],["Final diagnosis",0.08,false],["Vital signs",0.0,false]],"suffices":0.09,"leads_to":7},{"asked_on":7,"selected":"laboratory_tests","probs":[["Laboratory tests",0.73,true],["Final diagnosis",0.11,false],["Home medication list",0.1,false],["Imaging",0.06,false],["Vital signs",0.0,false]],"suffices":0.09,"leads_to":8},{"asked_on":8,"selected":"laboratory_tests","probs":[["Laboratory tests",0.51,true],["Final diagnosis",0.23,false],["Home medication list",0.23,false],["Imaging",0.03,false],["Vital signs",0.0,false]],"suffices":0.1,"leads_to":9},{"asked_on":9,"selected":"laboratory_tests","probs":[["Laboratory tests",0.63,true],["Home medication list",0.18,false],["Final diagnosis",0.17,false],["Imaging",0.02,false],["Vital signs",0.0,false]],"suffices":0.09,"leads_to":"none"},{"asked_on":9,"selected":"home_medications","probs":[["Home medication list",0.57,true],["Final diagnosis",0.37,false],["Imaging",0.05,false],["Vital signs",0.01,false]],"suffices":0.1,"leads_to":10},{"asked_on":10,"selected":"final_diagnosis","probs":[["Final diagnosis",0.76,true],["Imaging",0.23,false],["Vital signs",0.01,false]],"suffices":0.11,"leads_to":"final"}],"runs_correct":5},{"id":"cholecystitis","tab":"Acute cholecystitis","true":"cholecystitis","true_label":"Cholecystitis","recorded":"Acute cholecystitis","blurb":"Mid-back pain radiating to the epigastrium. The history alone pointed to pancreatitis.","names":{"cholecystitis":"Cholecystitis","pancreatitis":"Pancreatitis","other":"None of the 12 diseases"},"states":[{"step":0,"label":"History","findings":"Mid-back pain radiating to the epigastrium. Nausea. Worse lying supine.","unavailable":false,"p_true":0.01,"top":"pancreatitis","diff":[["cholecystitis",0.01],["pancreatitis",0.77],["other",0.21]],"icd":"K85.9","icd_title":"Acute pancreatitis, unspecified","icd_ok":false},{"step":1,"label":"Physical examination","findings":null,"unavailable":false,"p_true":0.26,"top":"pancreatitis","diff":[["cholecystitis",0.26],["pancreatitis",0.55],["other",0.19]],"icd":"K85.9","icd_title":"Acute pancreatitis, unspecified","icd_ok":false},{"step":2,"label":"Imaging: abdominal ultrasound","findings":"Multiple gallstones. Mild gallbladder distension. Small pericholecystic fluid.","unavailable":false,"p_true":0.97,"top":"cholecystitis","diff":[["cholecystitis",0.97],["pancreatitis",0.01],["other",0.02]],"icd":"K80.00","icd_title":"Calculus of gallbladder with acute cholecystitis without obstruction","icd_ok":true},{"step":3,"label":"Laboratory order","findings":"Lipase: 28 IU/L (ref. 0–60). ALT: 678 IU/L. AST: 989 IU/L. Total bilirubin: 1.6 mg/dL.","unavailable":false,"p_true":0.9,"top":"cholecystitis","diff":[["cholecystitis",0.9],["pancreatitis",0.0],["other",0.1]],"icd":"K80.00","icd_title":"Calculus of gallbladder with acute cholecystitis without obstruction","icd_ok":true},{"step":4,"label":"Imaging: abdominal CT","findings":null,"unavailable":true,"p_true":0.89,"top":"cholecystitis","diff":[["cholecystitis",0.89],["pancreatitis",0.0],["other",0.11]],"icd":"K80.00","icd_title":"Calculus of gallbladder with acute cholecystitis without obstruction","icd_ok":true},{"step":5,"label":"Imaging: abdominal MRCP","findings":"Multiple gallstones. Gallbladder wall thickening and pericholecystic fluid. No bile-duct filling defect.","unavailable":false,"p_true":0.99,"top":"cholecystitis","diff":[["cholecystitis",0.99],["pancreatitis",0.0],["other",0.01]],"icd":"K81.0","icd_title":"Acute cholecystitis","icd_ok":true}],"decisions":[{"asked_on":0,"selected":"physical_examination","probs":[["Physical examination",0.79,true],["Imaging",0.13,false],["Vital signs",0.05,false],["Laboratory tests",0.03,false],["Final diagnosis",0.0,false],["Home medication list",0.0,false]],"suffices":0.05,"leads_to":1},{"asked_on":1,"selected":"imaging","probs":[["Imaging",0.45,true],["Laboratory tests",0.44,false],["Vital signs",0.1,false],["Home medication list",0.01,false],["Final diagnosis",0.0,false]],"suffices":0.06,"leads_to":2},{"asked_on":2,"selected":"laboratory_tests","probs":[["Laboratory tests",0.91,true],["Final diagnosis",0.06,false],["Vital signs",0.02,false],["Imaging",0.01,false],["Home medication list",0.0,false]],"suffices":0.14,"leads_to":3},{"asked_on":3,"selected":"imaging","probs":[["Imaging",0.48,true],["Home medication list",0.22,false],["Final diagnosis",0.21,false],["Vital signs",0.06,false],["Laboratory tests",0.03,false]],"suffices":0.13,"leads_to":4},{"asked_on":4,"selected":"imaging","probs":[["Imaging",0.44,true],["Final diagnosis",0.28,false],["Home medication list",0.21,false],["Vital signs",0.04,false],["Laboratory tests",0.03,false]],"suffices":0.15,"leads_to":5},{"asked_on":5,"selected":"final_diagnosis","probs":[["Final diagnosis",0.85,true],["Home medication list",0.09,false],["Vital signs",0.04,false],["Imaging",0.01,false],["Laboratory tests",0.01,false]],"suffices":0.45,"leads_to":"final"}],"runs_correct":5}]}</script>
+<script type="application/json" id="d2c-figs">{"overview":{"title":"Overview of Decision2Care","panels":[{"id":"loop","tab":"","name":"the work-up loop","src":"assets/panels/overview-loop.webp","w":1700,"h":1004,"alt":"Diagram of the work-up loop. The clinical state feeds a Choice over the next action. A selected tool returns findings that update the state, and the final diagnosis ends the loop. Bars show the differential diagnosis after the abdominal CT and after the chest CT.","cap":"","hidden":true,"opens":"abc"},{"id":"all","tab":"Whole figure","name":"the whole figure","src":"assets/fig1-overview.webp","w":2000,"h":2066,"alt":"Diagram of Decision2Care: coding of the final diagnosis along the ICD-10-CM tree, the differential diagnosis after two steps, the work-up loop, four of the five tools and the treatment recommendation.","cap":"Decision2Care puts 2 kinds of typed questions into its decision model. For a Choice, the model returns a probability for each named option, and for a Noul, a yes/no question, it returns the probability that a statement is true. With these questions, Decision2Care codes the final diagnosis (A), follows the differential diagnosis (B), runs the work-up (C) with tools (D) and recommends treatment (E)."},{"id":"abc","tab":"A to C","name":"panels A to C","src":"assets/panels/overview-top.webp","w":2080,"h":898,"alt":"Coding of the final diagnosis along the ICD-10-CM tree, the differential diagnosis after two steps, and the work-up loop.","cap":"A, the final diagnosis is coded by Choices that descend the ICD-10-CM tree. B, the differential diagnosis after two steps of one work-up. C, the work-up loop."},{"id":"d","tab":"D","name":"panel D, the tools","src":"assets/panels/overview-tools.webp","w":2080,"h":730,"alt":"Four tools shown as columns: physical examination, laboratory tests, imaging and vital signs, each with the typed question it asks and what it returns.","cap":"D, each tool asks typed questions to decide what to retrieve, then adds the recorded findings to the clinical state and the work-up log."},{"id":"e","tab":"E","name":"panel E, the treatment recommendation","src":"assets/panels/overview-treatment.webp","w":2080,"h":520,"alt":"Flow of the treatment recommendation: category and procedure questions, regimen, dose and home medications, ending in the recommended orders.","cap":"E, after the final diagnosis, a Noul for each medication and procedure category selects the indicated options, and Choices select the regimen, the dose, the action on each home medication and the procedure."}]},"differential":{"title":"The differential diagnosis after every action","panels":[{"id":"b-focus","tab":"","name":"the work-up of pulmonary embolism","src":"assets/panels/differential-b-focus.webp","w":1560,"h":1434,"alt":"Stacked areas of the differential diagnosis during one work-up. Cholecystitis leads on the history. Pulmonary embolism rises from 5% to 37% after blood tests, 45% after the abdominal CT and 96% after the chest CT. Four cards give the findings at those steps.","cap":"","hidden":true,"opens":"b"},{"id":"a","tab":"A","name":"panel A, a work-up of meningitis","src":"assets/panels/differential-a.webp","w":2080,"h":1291,"alt":"A work-up of meningitis as stacked probability areas, with cards for the findings at four steps and a table of action probabilities.","cap":"A, a work-up of meningitis. The stacked areas show the probability of each disease and of none of the tested diseases (grey) on the history alone (H) and after each step. The true disease is shown in teal, and the line traces its probability."},{"id":"b","tab":"B","name":"panel B, the work-up of pulmonary embolism","src":"assets/panels/differential-b.webp","w":2080,"h":1183,"alt":"The work-up of pulmonary embolism as stacked probability areas, with cards for the findings at four steps and a table of action probabilities.","cap":"B, the work-up of pulmonary embolism. The cards give, for the history and the circled steps, the action, the findings returned and the resulting probability of the true disease. The table shows the probability assigned to each action at each decision, with the action taken outlined in orange."},{"id":"c","tab":"C","name":"panel C, a work-up of acute cholecystitis","src":"assets/panels/differential-c.webp","w":2080,"h":1201,"alt":"A work-up of acute cholecystitis as stacked probability areas, with cards for the findings at four steps and a table of action probabilities.","cap":"C, a work-up of acute cholecystitis. The true disease is shown in teal, and the line traces its probability."},{"id":"d","tab":"D","name":"panel D, the change by action and disease","src":"assets/panels/differential-d.webp","w":1800,"h":3477,"alt":"Heat map of the mean change in the probability of the true disease, with actions as rows and the 12 diseases as columns.","cap":"D, the mean change in the probability of the true disease per action, by disease, over 5 runs on the 546 paired admissions."},{"id":"all","tab":"Whole figure","name":"the whole figure","src":"assets/fig2-differential.webp","w":2400,"h":2297,"alt":"Three work-ups shown as stacked probability areas with cards for the findings at selected steps, and a heat map of the mean change in the probability of the true disease per action and disease.","cap":"A to C, the differential diagnosis during 3 work-ups of the baseline run. D, the mean change in the probability of the true disease per action, by disease, over 5 runs on the 546 paired admissions."}]},"audit":{"title":"Audit of the 4 high-confidence diagnostic errors","panels":[{"id":"a","tab":"A","name":"panel A, gallstone pancreatitis coded as acute cholecystitis","src":"assets/panels/audit-a.webp","w":2080,"h":2035,"alt":"A work-up shown step by step with the findings returned, the diagnosis at each state and bars for confidence and code probabilities. The confidence rises at the abdominal ultrasound.","cap":"A, gallstone pancreatitis coded as acute cholecystitis. The bars show the confidence in the diagnosis (navy), the summed probability of the codes that match the recorded disease (teal) and the probability of the code the agent finally chose (gold). The pink band indicates the arrival of the implicated imaging report."},{"id":"b","tab":"B","name":"panel B, cholecystitis coded as gallstones without cholecystitis","src":"assets/panels/audit-b.webp","w":2080,"h":2064,"alt":"A work-up shown step by step with the findings returned, the diagnosis at each state and bars for confidence and code probabilities. The confidence rises at the abdominal ultrasound.","cap":"B, cholecystitis coded as gallstones without cholecystitis. The bars show the confidence in the diagnosis (navy), the summed probability of the codes that match the recorded disease (teal) and the probability of the code the agent finally chose (gold). The pink band indicates the arrival of the implicated imaging report."},{"id":"c","tab":"C","name":"panel C, cholecystitis coded as bile duct obstruction","src":"assets/panels/audit-c.webp","w":2080,"h":2064,"alt":"A work-up shown step by step with the findings returned, the diagnosis at each state and bars for confidence and code probabilities. The confidence rises at the abdominal ultrasound.","cap":"C, cholecystitis coded as bile duct obstruction. The bars show the confidence in the diagnosis (navy), the summed probability of the codes that match the recorded disease (teal) and the probability of the code the agent finally chose (gold). The pink band indicates the arrival of the implicated imaging report."},{"id":"d","tab":"D","name":"panel D, cholecystitis coded as haemoperitoneum","src":"assets/panels/audit-d.webp","w":2080,"h":2094,"alt":"A work-up shown step by step with the findings returned, the diagnosis at each state and bars for confidence and code probabilities. The confidence rises at the abdominal CT.","cap":"D, cholecystitis coded as haemoperitoneum. The CT report describes a postoperative haematoma. The bars show the confidence in the diagnosis (navy), the summed probability of the codes that match the recorded disease (teal) and the probability of the code the agent finally chose (gold). The pink band indicates the arrival of the implicated imaging report."},{"id":"all","tab":"Whole figure","name":"the whole figure","src":"assets/fig3-audit.webp","w":2400,"h":2394,"alt":"Four work-ups in which the agent retained an incorrect diagnosis, each shown step by step with the findings returned, the diagnosis at that state and bars for confidence and code probabilities.","cap":"The 4 admissions out of 546 in which Decision2Care retained an incorrect diagnosis at a confidence of at least 0.70 in the baseline run. The bars show the confidence in the diagnosis (navy), the summed probability of the codes that match the recorded disease (teal) and the probability of the code the agent finally chose (gold). The pink band indicates the arrival of the implicated imaging report."}]},"treatment":{"title":"Treatment selection and its dependence on patient information","panels":[{"id":"a-focus","tab":"","name":"the decisions behind one antibiotic order","src":"assets/panels/treatment-a-focus.webp","w":1500,"h":1377,"alt":"Decision tree for one antibiotic order in an appendicitis admission. Of 42 categories, antibiotics are selected at 0.94. The regimen Choice selects metronidazole with ceftriaxone at 0.57, followed by the dose choices.","cap":"","hidden":true,"opens":"a"},{"id":"a","tab":"A","name":"panel A, the decisions behind one antibiotic order","src":"assets/panels/treatment-a.webp","w":1500,"h":2784,"alt":"Decision tree for one antibiotic order: category selection, the regimen and dose choices, two allergy flags and the final regimen of metronidazole with ciprofloxacin.","cap":"A, the medication decisions for one appendicitis admission with a listed cefaclor allergy. The allergy check flagged ceftriaxone, then cefazolin, and metronidazole with ciprofloxacin was kept."},{"id":"b","tab":"B","name":"panel B, treatment selections by disease","src":"assets/panels/treatment-b.webp","w":2080,"h":696,"alt":"Dot matrix of treatment selections by disease, with filled circles for the agent and rings for the hospital.","cap":"B, treatment selections by disease in the 475 admissions that the agent diagnosed correctly. Filled circles give the share of admissions in which the agent selected each medication category or procedure, and rings the share in which the hospital recorded it in first-day orders or admission procedures."},{"id":"c","tab":"C","name":"panel C, indication probabilities with information withheld","src":"assets/panels/treatment-c.webp","w":2080,"h":1081,"alt":"Two heat maps. The left one gives the mean probability that each treatment was indicated for four sets of information. The right one gives the change when one kind of information is withheld.","cap":"C, the probability that each treatment was indicated, decided again on all 546 admissions with information withheld. The left heat map shows the mean probability for each set of information. The right heat map gives the mean change when one kind of information is withheld and the diagnosis is kept."},{"id":"all","tab":"Whole figure","name":"the whole figure","src":"assets/fig4-treatment.webp","w":2400,"h":1405,"alt":"A decision tree for one antibiotic order, a dot matrix of treatment selections by disease, and heat maps of indication probabilities with information withheld.","cap":"A, the medication decisions for one appendicitis admission with a listed cefaclor allergy. B, treatment selections by disease in the 475 admissions that the agent diagnosed correctly. C, the probability that each treatment was indicated, decided again on all 546 admissions with information withheld."}]},"mortality":{"title":"Mortality predictions in intracerebral haemorrhage","panels":[{"id":"a","tab":"A","name":"panel A, emergency department, a patient who died within 30 days","src":"assets/panels/mortality-a.webp","w":2080,"h":1592,"alt":"Predicted probability of death within 30 days after each retrieval. It rises from 0.51 to 0.79 when the agent reads the brain CT report and ends at 0.84.","cap":"A, the probability of death within 30 days, predicted 8 h after arrival in the emergency department, for a patient who died within 30 days. The curve gives the prediction with the disease alone (step 0) and after each retrieval. The heatmap shows the probability the agent gave to each class of records at each step, and the class that it read is outlined in orange."},{"id":"b","tab":"B","name":"panel B, emergency department, a patient alive at 30 days","src":"assets/panels/mortality-b.webp","w":2080,"h":1631,"alt":"Predicted probability of death within 30 days after each retrieval. It falls from 0.60 to 0.08 when the agent reads the neurological observations and ends at 0.02.","cap":"B, the probability of death within 30 days, predicted 8 h after arrival in the emergency department, for a patient who was alive at 30 days. The curve gives the prediction with the disease alone (step 0) and after each retrieval. The heatmap shows the probability the agent gave to each class of records at each step, and the class that it read is outlined in orange."},{"id":"c","tab":"C","name":"panel C, intensive care unit, a patient who died in hospital","src":"assets/panels/mortality-c.webp","w":2080,"h":1659,"alt":"Predicted probability of death in hospital after each retrieval. It rises to 0.79 when the agent reads a postoperative CT report and ends at 0.87.","cap":"C, the probability of death in hospital, predicted 12 h after admission to the intensive care unit, for a patient who died in hospital. The curve gives the prediction with the disease alone (step 0) and after each retrieval. The heatmap shows the probability the agent gave to each class of records at each step, and the class that it read is outlined in orange."},{"id":"d","tab":"D","name":"panel D, intensive care unit, a patient discharged alive","src":"assets/panels/mortality-d.webp","w":2080,"h":1699,"alt":"Predicted probability of death in hospital after each retrieval. It falls to 0.13 when the agent reads a postoperative CT report and ends at 0.07.","cap":"D, the probability of death in hospital, predicted 12 h after admission to the intensive care unit, for a patient who was discharged alive. The curve gives the prediction with the disease alone (step 0) and after each retrieval. The heatmap shows the probability the agent gave to each class of records at each step, and the class that it read is outlined in orange."},{"id":"all","tab":"Whole figure","name":"the whole figure","src":"assets/fig5-mortality-audit.webp","w":2200,"h":1845,"alt":"Four patients with intracerebral haemorrhage. For each, a curve of the predicted probability of death after each retrieval, a heat map of the records the agent chose, and cards with the records returned.","cap":"Predictions after each retrieval in 4 patients, 2 in the emergency department and 2 in the intensive care unit. The curve gives the prediction with the disease alone (step 0) and after each retrieval. The heatmap shows the probability the agent gave to each class of records at each step, and the class that it read is outlined in orange."}]},"performance":{"title":"Accuracy of the mortality predictions in the emergency department and intensive care unit","panels":[{"id":"all","tab":"Whole figure","name":"the whole figure","src":"assets/fig6-mortality-performance.webp","w":2200,"h":1538,"alt":"ROC curves for 30-day and 90-day mortality with the predictions of three ICU clinicians, and hourly AUROC curves for eight ICU disease cohorts against three severity scores.","cap":"A and B, ROC curves of the prediction made 8 h after arrival in the emergency department for death within 30 and 90 days, from the mean of 5 runs on 8 disease cohorts. Crosses show the predictions of 3 ICU clinicians on 72 cases in which wrong agent predictions were over-represented. C, AUROC for predicting in-hospital death from the first 1 to 12 h of ICU records, by disease, with 3 severity scores computed at 24 h."},{"id":"ab","tab":"A and B","name":"panels A and B, the emergency department","src":"assets/panels/performance-ab.webp","w":2080,"h":518,"alt":"ROC curves for death within 30 and 90 days with the predictions of three ICU clinicians, and stacked bars of their certainty.","cap":"A and B, ROC curves of the prediction made 8 h after arrival in the emergency department for death within 30 and 90 days, from the mean of 5 runs on 8 disease cohorts. Crosses show the predictions of 3 ICU clinicians, and the dot is their mean, on 72 cases in which wrong agent predictions were over-represented. The stacked bars show their confidence."},{"id":"c","tab":"C","name":"panel C, the intensive care unit","src":"assets/panels/performance-c.webp","w":2080,"h":922,"alt":"Hourly AUROC curves for eight ICU disease cohorts, each against three severity scores drawn as grey lines.","cap":"C, AUROC for predicting in-hospital death from the first 1 to 12 h of ICU records, by disease. Bands are 95% bootstrap intervals. Grey lines show APS III, SAPS II and OASIS at 24 h in the same patients. The dot marks the first hour at or above the highest score."}]}}</script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag), k;
+    attrs = attrs || {};
+    for (k in attrs) {
+      if (!Object.prototype.hasOwnProperty.call(attrs, k) || attrs[k] == null) continue;
+      if (k === 'class') n.className = attrs[k];
+      else if (k === 'text') n.textContent = attrs[k];
+      else if (k === 'style') n.style.cssText = attrs[k];
+      else n.setAttribute(k, attrs[k]);
+    }
+    (kids || []).forEach(function (c) { if (c != null) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return n;
+  }
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function sv(tag, attrs, text) {
+    var n = document.createElementNS(SVGNS, tag), k;
+    for (k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function icon(id) { var s = sv('svg', { 'aria-hidden': 'true' }); s.appendChild(sv('use', { href: '#' + id })); return s; }
+  var f2 = function (v) { return v.toFixed(2); };
+  var f1 = function (v) { return v.toFixed(1); };
+  var DATA = JSON.parse($('#d2c-data').textContent);
+  var FIGS = JSON.parse($('#d2c-figs').textContent);
+  var root = document.documentElement;
+
+  /* ---------------------------------------------------------------- tooltip */
+  var tip = el('div', { class: 'tip', role: 'tooltip' });
+  tip.hidden = true;
+  document.body.appendChild(tip);
+  function fillTip(head, rows) {
+    tip.textContent = '';
+    if (head) tip.appendChild(el('div', { class: 'tip-h', text: head }));
+    rows.forEach(function (r) {
+      tip.appendChild(el('div', { class: 'tip-row' }, [el('b', { text: r[0] }), el('span', { text: r[1] ? ' ' + r[1] : '' })]));
+    });
+  }
+  function placeTip(x, y) {
+    tip.hidden = false;
+    var w = tip.offsetWidth, h = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    var left = Math.min(Math.max(8, x + 14), vw - w - 8);
+    var top = y + 16 + h > vh - 8 ? y - h - 12 : y + 16;
+    tip.style.left = left + 'px';
+    tip.style.top = Math.max(8, top) + 'px';
+  }
+  function hideTip() { tip.hidden = true; }
+  function bindTip(node, getContent) {
+    node.addEventListener('pointerenter', function (e) { var c = getContent(); fillTip(c.head, c.rows); placeTip(e.clientX, e.clientY); });
+    node.addEventListener('pointermove', function (e) { if (!tip.hidden) placeTip(e.clientX, e.clientY); });
+    node.addEventListener('pointerleave', hideTip);
+    node.addEventListener('focus', function () { var c = getContent(), r = node.getBoundingClientRect(); fillTip(c.head, c.rows); placeTip(r.left + r.width / 2, r.top + r.height / 2); });
+    node.addEventListener('blur', hideTip);
+  }
+  $$('[data-tip]').forEach(function (node) {
+    bindTip(node, function () {
+      var parts = node.getAttribute('data-tip').split('\n');
+      return { head: parts[0], rows: parts.slice(1).map(function (p) { var i = p.indexOf('|'); return i < 0 ? [p, ''] : [p.slice(0, i), p.slice(i + 1)]; }) };
+    });
+  });
+  window.addEventListener('scroll', hideTip, { passive: true });
+
+  /* ---------------------------------------------------------------- reveal: the record in the intro draws itself once */
+  if (sv('line', {}).pathLength !== undefined) root.className += ' can-draw';
+  var reveals = $$('.reveal');
+  if ('IntersectionObserver' in window && /\banim\b/.test(root.className)) {
+    var ro = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('is-in'); ro.unobserve(en.target); } });
+    }, { threshold: 0.35 });
+    reveals.forEach(function (n) { ro.observe(n); });
+  } else {
+    reveals.forEach(function (n) { n.classList.add('is-in'); });
+  }
+
+  /* ---------------------------------------------------------------- dot plot: accuracy by disease */
+  var T = DATA.table1;
+  function drawDots() {
+    var host = $('#dotplot');
+    var W = Math.max(280, Math.round(host.clientWidth));
+    var narrow = W < 560;
+    var L = narrow ? 92 : 206, R = narrow ? 10 : 18, top = 22, rowH = narrow ? 32 : 30;
+    var rc = narrow ? 3.6 : 4.4, rd = narrow ? 5 : 6, lane = narrow ? 7.5 : 7, near = 2 * rc + 2.5;
+    var H = top + rowH * T.accuracy.length + 6;
+    var x = function (v) { return L + (W - L - R) * v / 100; };
+    var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, 'aria-hidden': 'true' });
+    (narrow ? [0, 50, 100] : [0, 25, 50, 75, 100]).forEach(function (t) {
+      svg.appendChild(sv('line', { class: t === 0 ? 'base' : 'grid', x1: x(t), x2: x(t), y1: top - 4, y2: H - 4 }));
+      svg.appendChild(sv('text', { class: 'tick', x: x(t), y: 11, 'text-anchor': t === 0 ? 'start' : (t === 100 ? 'end' : 'middle') }, t + (t === 100 ? '%' : '')));
+    });
+    T.accuracy.forEach(function (a, i) {
+      var cy = top + rowH * i + rowH / 2, s = a.sys;
+      var g = sv('g', { class: 'row', tabindex: '0', role: 'img', 'aria-label': a.disease + ', ' + a.n + ' admissions. ' + T.systems.map(function (k) { return T.labels[k] + ' ' + f1(s[k].mean) + ' percent'; }).join(', ') + '.' });
+      g.appendChild(sv('rect', { class: 'hit', x: 0, y: cy - rowH / 2, width: W, height: rowH, rx: 5 }));
+      var lab = sv('text', { class: 'lab', x: 4, y: cy + 4 }, narrow ? a.short : a.disease);
+      if (!narrow) lab.appendChild(sv('tspan', { class: 'labn', dx: 6 }, 'n=' + a.n));
+      g.appendChild(lab);
+      /* Decision2Care keeps the centre line. A comparator that would sit on another mark moves to the lane above or below. */
+      var placed = [{ x: x(s.d2c.mean), lane: 0 }];
+      var marks = ['gpt', 'glm', 'claude'].map(function (k) { return { k: k, x: x(s[k].mean) }; }).sort(function (p, q) { return p.x - q.x; });
+      marks.forEach(function (m) {
+        var lanes = [0, -1, 1], li;
+        for (li = 0; li < lanes.length; li++) {
+          if (!placed.some(function (q) { return q.lane === lanes[li] && Math.abs(q.x - m.x) < near; })) break;
+        }
+        m.lane = lanes[Math.min(li, 2)];
+        placed.push({ x: m.x, lane: m.lane });
+      });
+      if (s.d2c.max > s.d2c.min) g.appendChild(sv('line', { class: 'rng', x1: x(s.d2c.min), x2: x(s.d2c.max), y1: cy, y2: cy }));
+      marks.forEach(function (m) {
+        var my = cy + m.lane * lane, d = rc + 1.2;
+        if (m.k === 'gpt') g.appendChild(sv('circle', { class: 'cmp', cx: m.x, cy: my, r: rc }));
+        else if (m.k === 'glm') g.appendChild(sv('rect', { class: 'cmp', x: m.x - rc + 0.4, y: my - rc + 0.4, width: 2 * rc - 0.8, height: 2 * rc - 0.8 }));
+        else g.appendChild(sv('path', { class: 'cmp', d: 'M' + m.x + ' ' + (my - d) + ' L' + (m.x + d) + ' ' + my + ' L' + m.x + ' ' + (my + d) + ' L' + (m.x - d) + ' ' + my + ' Z' }));
+      });
+      g.appendChild(sv('circle', { class: 'd2c', cx: x(s.d2c.mean), cy: cy, r: rd }));
+      bindTip(g, function () {
+        return { head: a.disease + ', ' + a.n + ' admissions', rows: T.systems.map(function (k) { return [f1(s[k].mean) + '%', T.labels[k] + ' (' + f1(s[k].min) + '–' + f1(s[k].max) + ')']; }) };
+      });
+      svg.appendChild(g);
+    });
+    host.textContent = '';
+    host.appendChild(svg);
+  }
+  drawDots();
+  var tvBtn = $('#tv-btn'), tv = $('#tv');
+  tvBtn.addEventListener('click', function () {
+    var open = tv.hidden;
+    tv.hidden = !open;
+    tvBtn.setAttribute('aria-expanded', String(open));
+    tvBtn.textContent = open ? 'Hide table' : 'Show as table';
+  });
+
+  /* ---------------------------------------------------------------- player: a recorded work-up, step by step */
+  var CASES = DATA.cases;
+  var COLORS = ['var(--d-teal)', 'var(--d-amber)', 'var(--d-burgundy)'];
+  var STEP_MS = 2600;
+  var rp = { c: 0, i: 0, playing: false, timer: null };
+  var playBtn = $('#rp-play'), detail = $('#rp-detail');
+  function timeline(c) {
+    var items = [{ kind: 'history', state: c.states[0], n: 'H', label: 'History' }];
+    c.decisions.forEach(function (d, k) {
+      var st, label, kind;
+      if (d.leads_to === 'final') { st = c.states[d.asked_on]; label = 'Final diagnosis'; kind = 'final'; }
+      else if (d.leads_to === 'none') { st = c.states[d.asked_on]; label = 'Laboratory tests, nothing ordered'; kind = 'none'; }
+      else { st = c.states[d.leads_to]; label = st.label; kind = 'step'; }
+      items.push({ kind: kind, state: st, n: String(k + 1), label: label, decision: d });
+    });
+    return items;
+  }
+  function renderTabs() {
+    var host = $('#rp-tabs');
+    host.textContent = '';
+    CASES.forEach(function (c, k) {
+      var b = el('button', { class: 'seg-tab', type: 'button', role: 'tab', id: 'rp-tab-' + c.id, 'aria-selected': String(k === rp.c), 'aria-controls': 'rp-panel', tabindex: k === rp.c ? '0' : '-1', text: c.tab });
+      b.addEventListener('click', function () { stop(); rp.c = k; rp.i = 0; renderReplay(true); });
+      b.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault(); e.stopPropagation(); stop();
+        rp.c = (k + (e.key === 'ArrowRight' ? 1 : CASES.length - 1)) % CASES.length; rp.i = 0;
+        renderReplay(true); $('#rp-tab-' + CASES[rp.c].id).focus();
+      });
+      host.appendChild(b);
+    });
+    $('#rp-panel').setAttribute('aria-labelledby', 'rp-tab-' + CASES[rp.c].id);
+  }
+  function optRow(label, v, chosen, tag) {
+    var lab = el('span', { class: 'ol', text: label });
+    if (chosen) lab.appendChild(el('small', { text: tag }));
+    return el('div', { class: 'opt' + (chosen ? ' is-c' : '') }, [
+      lab,
+      el('span', { class: 'track' }, [el('i', { style: '--v:' + v })]),
+      el('span', { class: 'ov', text: f2(v) })
+    ]);
+  }
+  function renderDetail(c, items, idx) {
+    var it = items[idx], st = it.state, d = it.decision, host = detail;
+    host.textContent = '';
+    var head = el('div', { class: 'rp-h' }, [
+      el('span', { class: 'k', text: it.kind === 'history' ? 'before any action' : 'decision ' + it.n + ' of ' + (items.length - 1) }),
+      el('h3', { text: it.label })
+    ]);
+    if (it.kind === 'step' && st.unavailable) head.appendChild(el('span', { class: 'chip', text: 'no report on record' }));
+    host.appendChild(head);
+
+    var cols = el('div', { class: 'rp-cols' });
+    /* the typed decision */
+    var dec = el('div', { class: 'rp-block' }, [el('h4', { text: 'Choice over the remaining actions' })]);
+    if (!d) {
+      dec.appendChild(el('p', { class: 'none', text: 'The work-up starts from the presenting history. No decision has been taken yet.' }));
+    } else {
+      var opts = el('div', { class: 'opts' });
+      d.probs.forEach(function (p) { if (p[1] >= 0.005 || p[2]) opts.appendChild(optRow(p[0], p[1], p[2], 'executed')); });
+      dec.appendChild(opts);
+      dec.appendChild(el('p', { class: 'rp-noul' }, ['Noul, recorded without being acted on. Do the documented findings suffice to name the principal diagnosis? ', el('b', { text: f2(d.suffices) })]));
+    }
+    cols.appendChild(dec);
+    /* the differential */
+    var dxb = el('div', { class: 'rp-block' }, [el('h4', { text: it.kind === 'history' ? 'Differential on the history alone' : (it.kind === 'step' ? 'Differential after this step' : 'Differential at this point') })]);
+    var dx = el('div', { class: 'dx' });
+    var top = st.diff.reduce(function (a, b) { return b[1] > a[1] ? b : a; });
+    st.diff.forEach(function (p, k) {
+      var isOther = p[0] === 'other', isTrue = p[0] === c.true;
+      var lab = el('span', { class: 'dl', text: c.names[p[0]] });
+      if (isTrue) lab.appendChild(el('small', { text: 'recorded diagnosis' }));
+      else if (p === top) lab.appendChild(el('small', { text: 'top-ranked' }));
+      dx.appendChild(el('div', { class: 'dx-row' + (isTrue ? ' is-true' : '') }, [
+        lab,
+        el('span', { class: 'track' }, [el('i', { style: '--v:' + p[1] + ';--c:' + (isOther ? 'var(--d-grey)' : COLORS[Math.min(k, 2)]) })]),
+        el('span', { class: 'dv', text: f2(p[1]) })
+      ]));
+    });
+    dxb.appendChild(dx);
+    cols.appendChild(dxb);
+    host.appendChild(cols);
+
+    /* findings */
+    var fb = el('div', { class: 'rp-block' }, [el('h4', { text: it.kind === 'history' ? 'Presenting history' : 'Findings returned' })]);
+    if (it.kind === 'final') fb.appendChild(el('p', { class: 'none', text: 'The Choice selected the final diagnosis, which ends the rounds. The diagnosis is then coded by Choices that descend the ICD-10-CM tree.' }));
+    else if (it.kind === 'none') fb.appendChild(el('p', { class: 'none', text: 'Laboratory tests were selected again, but no further test reached 0.50, so nothing was ordered and the clinical state did not change.' }));
+    else if (st.unavailable) fb.appendChild(el('p', { class: 'none', text: 'No report of this study is on record, so the tool returned an availability message.' }));
+    else if (st.findings) fb.appendChild(el('p', { class: 'rp-find', text: st.findings }));
+    else fb.appendChild(el('p', { class: 'none', text: 'The recorded findings were retrieved and added to the clinical state.' }));
+    host.appendChild(fb);
+
+    /* coded diagnosis */
+    var ib = el('div', { class: 'rp-block' }, [el('h4', { text: it.kind === 'final' ? 'Final diagnosis' : 'Diagnosis the agent would code now' })]);
+    ib.appendChild(el('div', { class: 'icd' }, [
+      el('span', { class: 'code-chip', text: st.icd }),
+      el('span', { text: st.icd_title }),
+      el('span', { class: st.icd_ok ? 'ok-chip' : 'no-chip', text: st.icd_ok ? 'matches the recorded diagnosis' : 'does not match the recorded diagnosis' })
+    ]));
+    host.appendChild(ib);
+  }
+  /* The detail pane keeps the height of its tallest step, so the controls do not move while the work-up plays. */
+  function reserveHeight(c, items) {
+    var max = 0, k;
+    detail.style.minHeight = '';
+    for (k = 0; k < items.length; k++) { renderDetail(c, items, k); max = Math.max(max, detail.offsetHeight); }
+    detail.style.minHeight = max + 'px';
+  }
+  function setPlayIcon() {
+    var end = rp.i === timeline(CASES[rp.c]).length - 1;
+    var id = rp.playing ? 'i-pause' : (end ? 'i-again' : 'i-play');
+    playBtn.textContent = '';
+    playBtn.appendChild(icon(id));
+    playBtn.setAttribute('aria-label', rp.playing ? 'Pause' : (end ? 'Play the work-up again' : 'Play the work-up'));
+  }
+  function renderReplay(measure) {
+    var c = CASES[rp.c], items = timeline(c);
+    if (rp.i > items.length - 1) rp.i = items.length - 1;
+    renderTabs();
+    var blurb = $('#rp-blurb');
+    blurb.textContent = c.blurb;
+    blurb.appendChild(el('span', { text: 'Recorded diagnosis: ' + c.recorded + '. The meters show the probability of ' + c.true_label.toLowerCase() + ' in the differential.' }));
+    var list = $('#rp-list');
+    list.textContent = '';
+    list.appendChild(el('div', { class: 'rp-list-head', 'aria-hidden': 'true' }, [el('span'), el('span', { text: 'Action' }), el('span', { text: 'P(true)' })]));
+    items.forEach(function (it, k) {
+      var b = el('button', { class: 'rp-item', type: 'button', 'aria-current': k === rp.i ? 'step' : null, 'aria-label': (it.kind === 'history' ? 'History' : 'Decision ' + it.n + ', ' + it.label) + ', probability of the recorded diagnosis ' + f2(it.state.p_true) }, [
+        el('span', { class: 'n', text: it.n }),
+        el('span', { class: 't' }, [it.label, el('i', {}, [el('u', { style: '--v:' + it.state.p_true })])]),
+        el('span', { class: 'p', text: f2(it.state.p_true) })
+      ]);
+      b.addEventListener('click', function () { stop(); rp.i = k; renderReplay(); });
+      list.appendChild(b);
+    });
+    if (measure) reserveHeight(c, items);
+    renderDetail(c, items, rp.i);
+    var track = $('#rp-track');
+    track.textContent = '';
+    items.forEach(function (it, k) {
+      var s = el('button', { type: 'button', tabindex: '-1', class: k <= rp.i ? 'done' : null });
+      s.addEventListener('click', function () { stop(); rp.i = k; renderReplay(); });
+      track.appendChild(s);
+    });
+    $('#rp-prev').disabled = rp.i === 0;
+    $('#rp-next').disabled = rp.i === items.length - 1;
+    $('#rp-count').textContent = rp.i === 0 ? 'history' : 'decision ' + rp.i + ' of ' + (items.length - 1);
+    setPlayIcon();
+  }
+  function stop() {
+    if (rp.timer) { clearTimeout(rp.timer); rp.timer = null; }
+    if (rp.playing) { rp.playing = false; detail.setAttribute('aria-live', 'polite'); setPlayIcon(); }
+  }
+  function tick() {
+    var n = timeline(CASES[rp.c]).length;
+    if (rp.i >= n - 1) { stop(); return; }
+    rp.i++;
+    renderReplay();
+    if (rp.i >= n - 1) { stop(); return; }
+    rp.timer = setTimeout(tick, STEP_MS);
+  }
+  function play() {
+    var n = timeline(CASES[rp.c]).length;
+    if (rp.i >= n - 1) rp.i = 0;
+    rp.playing = true;
+    detail.setAttribute('aria-live', 'off');
+    renderReplay();
+    rp.timer = setTimeout(tick, rp.i === 0 ? 1500 : STEP_MS);
+  }
+  playBtn.addEventListener('click', function () { if (rp.playing) stop(); else play(); });
+  $('#rp-prev').addEventListener('click', function () { stop(); if (rp.i > 0) { rp.i--; renderReplay(); } });
+  $('#rp-next').addEventListener('click', function () { stop(); rp.i++; renderReplay(); });
+  $('#rp').addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var n = timeline(CASES[rp.c]).length;
+    stop();
+    if (e.key === 'ArrowRight' && rp.i < n - 1) rp.i++;
+    else if (e.key === 'ArrowLeft' && rp.i > 0) rp.i--;
+    else return;
+    e.preventDefault();
+    var wasItem = document.activeElement && document.activeElement.classList.contains('rp-item');
+    renderReplay();
+    if (wasItem) { var cur = $('.rp-item[aria-current="step"]'); if (cur) cur.focus(); }
+  });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); });
+  /* The first work-up starts by itself, once, when the player reaches the middle of the window, and it stops when
+     the player leaves it. Readers who asked for less motion start it with the button. */
+  if ('IntersectionObserver' in window && /\banim\b/.test(root.className)) {
+    var auto = { done: false, by: false };
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting && !auto.done && !rp.playing && rp.c === 0 && rp.i === 0) { auto.done = true; auto.by = true; play(); }
+        else if (!en.isIntersecting && rp.playing && auto.by) stop();
+      });
+    }, { rootMargin: '-45% 0px -45% 0px' }).observe($('#rp'));
+    $('#rp').addEventListener('pointerdown', function () { auto.done = true; auto.by = false; }, true);
+    $('#rp').addEventListener('keydown', function () { auto.done = true; auto.by = false; }, true);
+  }
+  renderReplay(true);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!rp.playing) renderReplay(true); });
+
+  var rt;
+  window.addEventListener('resize', function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () { drawDots(); if (!rp.playing) renderReplay(true); }, 140);
+  });
+
+  /* ---------------------------------------------------------------- figures: panels inside a card, and the viewer */
+  function panelOf(group, id) {
+    var ps = FIGS[group].panels, k;
+    for (k = 0; k < ps.length; k++) if (ps[k].id === id) return ps[k];
+    return ps[0];
+  }
+  $$('.fig[data-group]').forEach(function (fig) {
+    var group = fig.getAttribute('data-group'), stage = $('.fig-stage', fig), img = $('img', stage), cap = $('.fig-cap', fig);
+    var tabs = $$('.fig-tab', fig);
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        var p = panelOf(group, t.getAttribute('data-panel'));
+        tabs.forEach(function (o) { o.setAttribute('aria-selected', String(o === t)); o.tabIndex = o === t ? 0 : -1; });
+        img.src = p.src; img.width = p.w; img.height = p.h; img.alt = p.alt;
+        stage.setAttribute('data-panel', p.id);
+        if (cap && p.cap) cap.textContent = p.cap;
+      });
+      t.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        var k = tabs.indexOf(t), n = tabs[(k + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        n.click(); n.focus();
+      });
+    });
+    stage.addEventListener('click', function () { openViewer(group, stage.getAttribute('data-panel'), stage); });
+  });
+
+  var viewer = $('#viewer'), vImg = $('#v-img'), vCap = $('#v-cap'), vTabs = $('#v-tabs'), vTitle = $('#v-title'), vZoom = $('#v-zoom');
+  var vw = { group: null, id: null, opener: null };
+  function setZoom(on) {
+    viewer.classList.toggle('is-zoom', on);
+    vZoom.textContent = on ? 'Fit to window' : 'Actual size';
+    if (on) $('#v-stage').scrollTo(0, 0);
+  }
+  function showPanel(id) {
+    var g = FIGS[vw.group], p = panelOf(vw.group, id);
+    vw.id = p.id;
+    vImg.src = p.src; vImg.alt = p.alt;
+    vCap.textContent = p.cap || g.cap || '';
+    $$('.v-tab', vTabs).forEach(function (t) { var on = t.getAttribute('data-panel') === p.id; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; });
+    setZoom(false);
+  }
+  function openViewer(group, id, opener) {
+    var g = FIGS[group];
+    vw.group = group; vw.opener = opener;
+    vTitle.textContent = g.title;
+    vTabs.textContent = '';
+    g.panels.forEach(function (p) {
+      if (p.hidden) return;
+      var t = el('button', { class: 'v-tab', type: 'button', role: 'tab', 'data-panel': p.id, title: p.name, text: p.tab });
+      t.addEventListener('click', function () { showPanel(p.id); });
+      vTabs.appendChild(t);
+    });
+    vTabs.hidden = g.panels.length < 2;
+    var first = panelOf(group, id);
+    showPanel(first.hidden ? first.opens : first.id);
+    viewer.hidden = false;
+    document.documentElement.style.overflow = 'hidden';
+    $('#v-close').focus();
+  }
+  function closeViewer() {
+    viewer.hidden = true; viewer.classList.remove('is-zoom'); vImg.removeAttribute('src');
+    document.documentElement.style.overflow = '';
+    if (vw.opener) vw.opener.focus();
+  }
+  function stepPanel(dir) {
+    var ids = FIGS[vw.group].panels.filter(function (p) { return !p.hidden; }).map(function (p) { return p.id; });
+    if (ids.length < 2) return;
+    showPanel(ids[(ids.indexOf(vw.id) + dir + ids.length) % ids.length]);
+  }
+  $('#v-close').addEventListener('click', closeViewer);
+  vZoom.addEventListener('click', function () { setZoom(!viewer.classList.contains('is-zoom')); });
+  vImg.addEventListener('click', function () { setZoom(!viewer.classList.contains('is-zoom')); });
+  viewer.addEventListener('click', function (e) { if (e.target === viewer || e.target.id === 'v-stage') closeViewer(); });
+  document.addEventListener('keydown', function (e) {
+    if (viewer.hidden) return;
+    if (e.key === 'Escape') { closeViewer(); return; }
+    if (e.key === 'ArrowRight') { e.preventDefault(); stepPanel(1); return; }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); stepPanel(-1); return; }
+    if (e.key === 'Tab') {
+      var f = $$('.v-tab', vTabs).filter(function (t) { return t.getAttribute('aria-selected') === 'true'; }).concat([vZoom, $('#v-close')]);
+      var i = f.indexOf(document.activeElement);
+      e.preventDefault();
+      f[(i + (e.shiftKey ? f.length - 1 : 1)) % f.length].focus();
+    }
+  });
+
+  /* ---------------------------------------------------------------- copy buttons */
+  $$('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pre = $('pre', btn.parentNode), text = pre.textContent;
+      var done = function (ok) {
+        btn.textContent = ok ? 'Copied' : 'Select and copy';
+        if (!ok) { var r = document.createRange(); r.selectNodeContents(pre); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+        setTimeout(function () { btn.textContent = 'Copy'; }, 2200);
+      };
+      try { navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); }); }
+      catch (err) { done(false); }
+    });
+  });
+
+  /* ---------------------------------------------------------------- author photographs, if any were added */
+  (function () {
+    var team = $('#team'), people = $$('.person', team);
+    /* The pictures that existed when the page was built are already in it. Only the missing ones are looked for,
+       including those that show the stand-in picture. */
+    var missing = people.filter(function (li) { var i = $('.ph img', li); return !i || i.hasAttribute('data-placeholder'); });
+    var left = missing.length, found = people.length - missing.length;
+    if (!left || team.getAttribute('data-photos') === 'off') return;
+    function settle() {
+      left--;
+      /* large square pictures once most of the team has one; small round ones until then */
+      if (left === 0 && found >= Math.ceil(people.length * 0.75)) team.classList.add('has-photos');
+    }
+    function look() {
+      missing.forEach(function (li) {
+        var slug = li.getAttribute('data-photo'), probe = new Image();
+        probe.onload = function () {
+          var old = $('.ph img', li);
+          if (old) { old.removeAttribute('data-placeholder'); old.removeAttribute('onerror'); old.src = probe.src; }
+          else $('.ph', li).appendChild(el('img', { src: probe.src, alt: '', loading: 'lazy' }));
+          found++; settle();
+        };
+        probe.onerror = settle;
+        probe.src = 'assets/authors/' + slug + '.jpg';
+      });
+    }
+    if (document.readyState === 'complete') look(); else window.addEventListener('load', look);
+  })();
+
+  /* ---------------------------------------------------------------- current section in the nav */
+  if ('IntersectionObserver' in window) {
+    var links = {};
+    $$('.nav-links a[href^="#"]').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting || !links[en.target.id]) return;
+        Object.keys(links).forEach(function (k) { links[k].removeAttribute('aria-current'); });
+        links[en.target.id].setAttribute('aria-current', 'true');
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    Object.keys(links).forEach(function (id) { var s = document.getElementById(id); if (s) io.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>
