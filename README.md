@@ -7,6 +7,8 @@
 
 <p align="center"><strong>Auditable clinical support with decision agents.</strong></p>
 
+<p align="center"><a href="https://peterhan91.github.io/Decision2Care/"><strong>Project website</strong></a>: recorded work-ups, how the agent works, and the main results.</p>
+
 <p align="center">
   <img src="docs/assets/decision2care-overview.png" width="100%" alt="An emergency admission passes through typed decisions, each leaving a decision record, to auditable clinical support for diagnosis, treatment and prognosis. In the example, the probability of pulmonary embolism is 5% after the history, 37% after blood tests, 45% after the abdominal CT and 96% after the chest CT.">
 </p>
