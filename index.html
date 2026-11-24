@@ -244,6 +244,18 @@ a:hover{text-decoration-thickness:2px}
 
 /* ------------------------------------------------------------------ player */
 .demo{padding-top:clamp(56px,7vw,84px)}
+/* A jump to the film lands its heading under the bar, and the film is never taller than the window has room for. */
+.film-sec{padding-top:clamp(56px,7vw,84px);scroll-margin-top:calc(8px - clamp(56px,7vw,84px))}
+.film{position:relative;margin-top:26px;width:100%;max-width:max(320px,calc((100vh - 300px)*16/9));aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#0c1114;box-shadow:0 1px 2px rgba(19,31,30,.05),0 26px 50px -34px rgba(19,31,30,.45)}
+.film video{display:block;width:100%;height:100%;background:#0c1114}
+.film.is-ready{cursor:pointer}
+.film-play{position:absolute;right:clamp(10px,2.4%,26px);bottom:clamp(10px,4.2%,26px);display:inline-flex;align-items:center;gap:10px;padding:.72rem 1.15rem .72rem 1rem;border:0;border-radius:999px;background:var(--brand);color:#fff;font:inherit;font-size:.98rem;font-weight:600;line-height:1;cursor:pointer;box-shadow:0 10px 26px -10px rgba(0,0,0,.7)}
+.film-play[hidden]{display:none}
+.film-play:hover{background:var(--brand-hover)}
+.film-play svg{width:14px;height:14px;flex:none}
+.film-play .film-len{font-family:var(--mono);font-size:.78rem;font-weight:400;opacity:.88}
+.film-note{font-size:.84rem;line-height:1.5;color:var(--ink-3);margin-top:12px}
+@media (max-width:520px){.film{border-radius:10px}.film-play{padding:.56rem .9rem .56rem .8rem;font-size:.88rem;gap:8px}}
 .player{margin-top:26px}
 .seg-tabs{display:inline-flex;flex-wrap:wrap;gap:2px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
 .seg-tab{border:0;background:transparent;padding:5px 11px;border-radius:6px;font-family:var(--sans);font-weight:500;font-size:.8rem;letter-spacing:0;color:var(--ink-2);cursor:pointer}
@@ -551,6 +563,7 @@ footer{margin-top:clamp(72px,9vw,112px);border-top:1px solid var(--line)}
   <div class="nav-in">
     <a class="brand" href="#top"><svg aria-hidden="true"><use href="#d2c-mark"/></svg>Decision2Care</a>
     <nav class="nav-links" aria-label="Sections">
+      <a class="nav-link" href="#video">Video</a>
       <a class="nav-link" href="#why">Why</a>
       <a class="nav-link" href="#how">How it works</a>
       <a class="nav-link" href="#results">Results</a>
@@ -580,7 +593,7 @@ footer{margin-top:clamp(72px,9vw,112px);border-top:1px solid var(--line)}
     <div class="btns">
       <a class="btn btn-primary" href="https://github.com/peterhan91/Decision2Care">Code on GitHub</a>
       <a class="btn" href="https://arxiv.org/abs/2611.23700">Paper</a>
-      <a class="btn" href="#demo">Watch a work-up</a>
+      <a class="btn" href="#video">Watch the video</a>
     </div>
   </div>
   <a class="cue" href="#intro">Scroll ↓</a>
@@ -652,6 +665,19 @@ footer{margin-top:clamp(72px,9vw,112px);border-top:1px solid var(--line)}
     </div>
     <div class="mock-foot"><span>Final diagnosis</span><span class="code-chip">I26.94</span><span class="ok-chip">matches the recorded diagnosis</span></div>
   </div>
+</section>
+
+<!-- ================================================================== VIDEO -->
+<section class="wrap film-sec" id="video" aria-labelledby="video-h">
+  <h2 class="sec-h" id="video-h">The paper in two and a half minutes.</h2>
+  <p class="sec-lead" id="video-lead">The film follows one patient whose pulmonary embolism is easy to overlook. It then covers the results: diagnosis across 546 emergency admissions, how a treatment order is assembled, and mortality forecasts set against three ICU clinicians.</p>
+  <div class="film" id="film">
+    <video id="film-v" controls preload="none" playsinline width="1920" height="1080" poster="assets/video/decision2care-poster.webp" aria-label="Decision2Care, a film of 2 minutes 37 seconds" aria-describedby="video-lead">
+      <source src="assets/video/decision2care.mp4" type="video/mp4">
+    </video>
+    <button class="film-play" type="button" id="film-play" hidden aria-label="Play the video, 2 minutes 37 seconds"><svg aria-hidden="true"><use href="#i-play"/></svg><span>Play</span><span class="film-len">2 min 37 s</span></button>
+  </div>
+  <p class="film-note">2 min 37 s, with sound. <a href="assets/video/decision2care.mp4" download>Download the MP4</a> (26 MB).</p>
 </section>
 
 <!-- ================================================================== DEMO -->
@@ -1748,6 +1774,24 @@ decision2care prognosis  ...</code></pre></div>
       });
     }
     if (document.readyState === 'complete') look(); else window.addEventListener('load', look);
+  })();
+
+  /* ---------------------------------------------------------------- the film */
+  /* Without this script the video keeps its own controls. With it, the poster shows one Play button and the
+     controls appear once the film has started. Nothing of the film is fetched before that. */
+  (function () {
+    var box = document.getElementById('film'), v = document.getElementById('film-v'), b = document.getElementById('film-play');
+    if (!box || !v || !b) return;
+    v.controls = false; b.hidden = false; box.classList.add('is-ready');
+    function start() {
+      v.controls = true;
+      var p = v.play();
+      if (p && p.catch) p.catch(function () {});
+      try { v.focus({ preventScroll: true }); } catch (e) {}
+    }
+    b.addEventListener('click', function (e) { e.stopPropagation(); start(); });
+    box.addEventListener('click', function () { if (box.classList.contains('is-ready')) start(); });
+    v.addEventListener('play', function () { v.controls = true; b.hidden = true; box.classList.remove('is-ready'); });
   })();
 
   /* ---------------------------------------------------------------- current section in the nav */
